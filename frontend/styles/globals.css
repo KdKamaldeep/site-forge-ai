@@ -11,7 +11,7 @@
   --text: #334155;
   --muted: #64748b;
   --border: #e2e8f0;
-  --primary: #2563eb;
+  --primary: #1d4ed8;
   --accent: #f59e0b;
   --link: #1d4ed8;
   --link-hover: #1e40af;
@@ -71,12 +71,12 @@ body {
 a {
   color: var(--link, var(--primary));
   text-decoration: none;
-  transition: color 0.15s ease;
 }
 
 a:hover {
-  color: var(--link-hover, var(--primary-hover));
+  color: var(--link, var(--primary)) !important; /* Keep same color on hover */
   text-decoration: underline;
+  text-decoration-color: currentColor !important; /* Underline uses current text color - stays same */
   text-underline-offset: 2px;
 }
 
@@ -198,13 +198,15 @@ article h3,
   text-transform: capitalize;
 }
 
-/* Ensure links never turn black on hover */
+/* Ensure links keep same color on hover (no color change) */
 a:hover {
-  color: var(--link-hover, #1e40af) !important;
+  color: var(--link, #282b35) !important;
+  
 }
 
-/* Prevent any hover state from making links black */
+/* Prevent any hover state from changing link color or underline color */
 a:hover:not([class*="button"]):not([class*="btn"]) {
-  color: var(--link-hover, #1e40af) !important;
+  color: var(--link, #282b35) !important;
+  
 }
 

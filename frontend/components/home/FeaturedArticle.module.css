@@ -45,9 +45,7 @@
   text-transform: capitalize;
 }
 
-.featuredLink:hover .featuredTitle {
-  color: #2563eb;
-}
+/* No color change on hover - keep original color */
 
 .featuredExcerpt {
   font-size: 1.125rem;

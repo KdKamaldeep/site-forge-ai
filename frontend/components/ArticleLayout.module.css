@@ -8,7 +8,7 @@
   margin: 0 auto var(--spacing-lg, 2rem);
   padding: 0 var(--spacing-md, 1.5rem);
   font-size: 0.875rem;
-  color: var(--text-secondary, #6b7280);
+  color: var(--muted, #64748b);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -16,14 +16,15 @@
 }
 
 .breadcrumbs a {
-  color: var(--text-secondary, #6b7280);
+  color: var(--muted, #64748b);
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .breadcrumbs a:hover {
-  color: var(--primary, #2563eb);
+  color: var(--text-secondary, #64748b) !important; /* Keep same color on hover */
   text-decoration: underline;
+  text-decoration-color: currentColor !important; /* Underline matches text color - stays same */
 }
 
 .breadcrumbs span {
@@ -52,14 +53,14 @@
 .articleHeader {
   margin-bottom: var(--spacing-xl, 3rem);
   padding-bottom: var(--spacing-lg, 2rem);
-  border-bottom: 1px solid var(--border, #e5e7eb);
+  border-bottom: 1px solid var(--border, #e2e8f0);
 }
 
 .articleTitle {
   font-size: clamp(2rem, 5vw, 2.75rem);
   font-weight: 700;
   line-height: 1.2;
-  color: var(--text, #1f2937);
+  color: var(--text, #334155);
   margin: 0 0 var(--spacing-md, 1.5rem) 0;
   letter-spacing: -0.02em;
   text-transform: capitalize;
@@ -70,7 +71,7 @@
   flex-wrap: wrap;
   gap: var(--spacing-md, 1.5rem);
   align-items: center;
-  color: var(--text-secondary, #6b7280);
+  color: var(--muted, #64748b);
   font-size: 0.875rem;
 }
 
@@ -83,7 +84,7 @@
 .articleContent {
   font-size: 1.125rem;
   line-height: 1.75;
-  color: var(--text, #1f2937);
+  color: var(--text, #334155);
 }
 
 /* Typography */
@@ -92,7 +93,7 @@
 .articleContent h3,
 .articleContent h4 {
   font-weight: 700;
-  color: var(--text, #1f2937);
+  color: var(--text, #334155);
   margin-top: var(--spacing-xl, 3rem);
   margin-bottom: var(--spacing-md, 1.5rem);
   line-height: 1.3;
@@ -108,7 +109,7 @@
   font-size: 1.875rem;
   margin-top: var(--spacing-xl, 3rem);
   padding-bottom: var(--spacing-xs, 0.5rem);
-  border-bottom: 1px solid var(--border, #e5e7eb);
+  border-bottom: 1px solid var(--border, #e2e8f0);
 }
 
 .articleContent h3 {
@@ -155,14 +156,15 @@
 
 /* Links */
 .articleContent a {
-  color: var(--primary, #2563eb);
+  color: var(--link, #1d4ed8);
   text-decoration: underline;
+  text-decoration-color: currentColor; /* Underline matches text color */
   text-underline-offset: 2px;
-  transition: color 0.15s ease;
 }
 
 .articleContent a:hover {
-  color: var(--primary-hover, #1d4ed8);
+  color: var(--link, #1d4ed8) !important; /* Keep same color on hover */
+  text-decoration-color: currentColor !important; /* Underline matches text color - stays same */
 }
 
 .articleContent a.internal-link {
@@ -173,7 +175,7 @@
 }
 
 .articleContent a.internal-link:hover {
-  border-bottom-color: var(--primary-hover, #1d4ed8);
+  border-bottom-color: var(--link, #1d4ed8); /* Keep border same color on hover */
 }
 
 /* Images */
@@ -187,7 +189,7 @@
 
 /* Blockquotes */
 .articleContent blockquote {
-  border-left: 4px solid var(--primary, #2563eb);
+  border-left: 4px solid var(--link, #1d4ed8);
   padding: var(--spacing-md, 1.5rem);
   margin: var(--spacing-lg, 2rem) 0;
   font-style: italic;
@@ -203,7 +205,7 @@
   border-radius: 4px;
   font-size: 0.875em;
   font-family: 'Courier New', monospace;
-  color: var(--text, #1f2937);
+  color: var(--text, #334155);
 }
 
 .articleContent pre {
@@ -233,13 +235,13 @@
 .articleContent table td {
   padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid var(--border, #e5e7eb);
+  border-bottom: 1px solid var(--border, #e2e8f0);
 }
 
 .articleContent table th {
   background: var(--border-light, #f9fafb);
   font-weight: 600;
-  color: var(--text, #1f2937);
+  color: var(--text, #334155);
 }
 
 .articleContent table tr:hover {
@@ -249,7 +251,7 @@
 /* Strong/Emphasis */
 .articleContent strong {
   font-weight: 700;
-  color: var(--text, #1f2937);
+  color: var(--text, #334155);
 }
 
 .articleContent em {
@@ -283,7 +285,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--text-secondary, #6b7280);
+  color: var(--muted, #64748b);
   margin-bottom: var(--spacing-md, 1.5rem);
 }
 
@@ -300,7 +302,7 @@
 .tocItem a {
   display: block;
   font-size: 0.875rem;
-  color: var(--text-secondary, #6b7280);
+  color: var(--muted, #64748b);
   text-decoration: none;
   padding: 0.25rem 0;
   transition: all 0.15s ease;
@@ -309,7 +311,8 @@
 
 .tocItem a:hover,
 .tocItem.tocActive a {
-  color: var(--primary, #2563eb);
+  color: var(--muted, #64748b) !important; /* Keep same color on hover */
+  text-decoration-color: currentColor !important; /* Underline matches text color - stays same */
   padding-left: 0.5rem;
 }
 

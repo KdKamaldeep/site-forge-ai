@@ -84,34 +84,7 @@
   text-transform: capitalize;
 }
 
-.featuredLink:hover .cardTitle {
-  color: #2563eb;
-}
-
-/* Varied hover colors for featured cards */
-.featuredCard:nth-child(1) .featuredLink:hover .cardTitle {
-  color: #2563eb; /* Blue */
-}
-
-.featuredCard:nth-child(2) .featuredLink:hover .cardTitle {
-  color: #7c3aed; /* Purple */
-}
-
-.featuredCard:nth-child(3) .featuredLink:hover .cardTitle {
-  color: #059669; /* Green */
-}
-
-.featuredCard:nth-child(4) .featuredLink:hover .cardTitle {
-  color: #ea580c; /* Orange */
-}
-
-.featuredCard:nth-child(5) .featuredLink:hover .cardTitle {
-  color: #db2777; /* Pink */
-}
-
-.featuredCard:nth-child(6) .featuredLink:hover .cardTitle {
-  color: #0891b2; /* Teal */
-}
+/* No color change on hover - keep original color */
 
 .excerpt {
   font-size: 0.875rem;

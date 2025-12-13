@@ -12,10 +12,10 @@
 .sectionTitle {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text, #334155);
   margin: 0 0 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border, #e2e8f0);
 }
 
 .articlesList {
@@ -47,7 +47,7 @@
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 10px;
-  background: #f3f4f6;
+  background: var(--border-light, #f8fafc);
 }
 
 .articleImage {
@@ -59,7 +59,7 @@
 .imagePlaceholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  background: linear-gradient(135deg, var(--border, #e2e8f0) 0%, #d1d5db 100%);
 }
 
 .badgeWrapper {
@@ -78,45 +78,18 @@
   font-size: 1.375rem;
   font-weight: 600;
   line-height: 1.3;
-  color: #1f2937;
+  color: var(--text, #334155);
   margin: 0;
   transition: color 0.2s;
   text-transform: capitalize;
 }
 
-.articleLink:hover .articleTitle {
-  color: #2563eb;
-}
-
-/* Varied hover colors for editor's picks */
-.articleItem:nth-child(1) .articleLink:hover .articleTitle {
-  color: #2563eb; /* Blue */
-}
-
-.articleItem:nth-child(2) .articleLink:hover .articleTitle {
-  color: #7c3aed; /* Purple */
-}
-
-.articleItem:nth-child(3) .articleLink:hover .articleTitle {
-  color: #059669; /* Green */
-}
-
-.articleItem:nth-child(4) .articleLink:hover .articleTitle {
-  color: #ea580c; /* Orange */
-}
-
-.articleItem:nth-child(5) .articleLink:hover .articleTitle {
-  color: #db2777; /* Pink */
-}
-
-.articleItem:nth-child(6) .articleLink:hover .articleTitle {
-  color: #0891b2; /* Teal */
-}
+/* No color change on hover - keep original color */
 
 .articleExcerpt {
   font-size: 1rem;
   line-height: 1.7;
-  color: #4b5563;
+  color: var(--muted, #64748b);
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;

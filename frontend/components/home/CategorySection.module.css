@@ -24,20 +24,16 @@
   transition: color 0.2s;
 }
 
-.categoryLink:hover {
-  color: #2563eb;
-}
+/* No color change on hover - keep original color */
 
 .viewAllLink {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--muted, #64748b);
   text-decoration: none;
   transition: color 0.2s;
 }
 
-.viewAllLink:hover {
-  color: #1f2937;
-}
+/* No color change on hover - keep original color */
 
 .articlesList {
   list-style: none;
@@ -68,22 +64,7 @@
   text-transform: capitalize;
 }
 
-.articleLink:hover .articleTitle {
-  color: #2563eb;
-}
-
-/* Varied hover colors for category section articles */
-.articleItem:nth-child(1) .articleLink:hover .articleTitle {
-  color: #2563eb; /* Blue */
-}
-
-.articleItem:nth-child(2) .articleLink:hover .articleTitle {
-  color: #7c3aed; /* Purple */
-}
-
-.articleItem:nth-child(3) .articleLink:hover .articleTitle {
-  color: #059669; /* Green */
-}
+/* No color change on hover - keep original color */
 
 @media (max-width: 640px) {
   .categorySection {

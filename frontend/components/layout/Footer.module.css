@@ -81,7 +81,8 @@
 }
 
 .footerLinks a:hover {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.7) !important; /* Keep same color on hover */
+  text-decoration-color: currentColor !important; /* Underline matches text color - stays same */
 }
 
 .popularPostsList {
@@ -208,7 +209,7 @@
 }
 
 .newsletterButton:hover {
-  background: #2563eb;
+  background: var(--link, #1d4ed8);
 }
 
 @media (max-width: 968px) {

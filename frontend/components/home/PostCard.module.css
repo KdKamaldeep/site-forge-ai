@@ -62,30 +62,7 @@
   text-transform: capitalize;
 }
 
-.cardLink:hover .cardTitle {
-  color: #2563eb;
-}
-
-/* Varied hover colors for post cards - cycle through colors */
-.postCard:nth-child(2n+1) .cardLink:hover .cardTitle {
-  color: #2563eb; /* Blue */
-}
-
-.postCard:nth-child(2n) .cardLink:hover .cardTitle {
-  color: #7c3aed; /* Purple */
-}
-
-.postCard:nth-child(3n) .cardLink:hover .cardTitle {
-  color: #059669; /* Green */
-}
-
-.postCard:nth-child(4n) .cardLink:hover .cardTitle {
-  color: #ea580c; /* Orange */
-}
-
-.postCard:nth-child(5n) .cardLink:hover .cardTitle {
-  color: #db2777; /* Pink */
-}
+/* No color change on hover - keep original color */
 
 .cardExcerpt {
   font-size: 0.9375rem;

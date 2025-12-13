@@ -11,7 +11,7 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border, #e2e8f0);
 }
 
 .title {
@@ -35,7 +35,7 @@
 }
 
 .scrollButton:hover {
-  color: #1f2937;
+  color: var(--text, #334155);
 }
 
 .subtitle {
@@ -52,9 +52,9 @@
 
 .input {
   padding: 0.625rem 0.875rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border, #e2e8f0);
   background: #fff;
-  color: #1f2937;
+  color: var(--text, #334155);
   font-size: 0.875rem;
   border-radius: 4px;
   outline: none;
@@ -88,7 +88,7 @@
 }
 
 .newsletterFull {
-  background: #f9fafb;
+  background: var(--border-light, #f8fafc);
   padding: 3rem 0;
   margin: 3rem 0;
 }
@@ -104,7 +104,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 1.5rem;
-  color: #1f2937;
+  color: var(--text, #334155);
 }
 
 .fullForm {
@@ -117,7 +117,7 @@
 .fullInput {
   flex: 1;
   padding: 0.75rem 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border, #e2e8f0);
   font-size: 0.9375rem;
   outline: none;
   transition: border-color 0.2s;
@@ -125,7 +125,7 @@
 }
 
 .fullInput:focus {
-  border-color: #2563eb;
+  border-color: var(--link, #1d4ed8);
 }
 
 .fullButton {

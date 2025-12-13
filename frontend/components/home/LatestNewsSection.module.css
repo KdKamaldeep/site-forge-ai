@@ -21,7 +21,7 @@
 .sectionTitle {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text, #334155);
   margin: 0;
 }
 
@@ -33,9 +33,9 @@
 
 .tab {
   padding: 0.5rem 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border, #e2e8f0);
   background: #fff;
-  color: #6b7280;
+  color: var(--muted, #64748b);
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: 6px;
@@ -49,7 +49,7 @@
 
 .tab:hover {
   border-color: #d1d5db;
-  color: #1f2937;
+  color: var(--text, #334155);
 }
 
 .tab.active {
@@ -73,7 +73,7 @@
 .emptyState {
   text-align: center;
   padding: 3rem 0;
-  color: #6b7280;
+  color: var(--muted, #64748b);
 }
 
 .sidebar {
@@ -131,7 +131,7 @@
   }
 
   .tabs::-webkit-scrollbar-track {
-    background: #f3f4f6;
+    background: var(--border-light, #f8fafc);
   }
 
   .tabs::-webkit-scrollbar-thumb {

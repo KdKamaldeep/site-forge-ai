@@ -68,8 +68,8 @@
 }
 
 .navLink:hover {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
+  color: inherit; /* Keep same color on hover */
+  border-bottom-color: var(--link, #1d4ed8); /* Only border changes */
 }
 
 .navSearch {
@@ -87,7 +87,7 @@
 }
 
 .navSearch:hover {
-  color: #2563eb;
+  color: inherit; /* Keep same color on hover */
 }
 
 @media (max-width: 968px) {

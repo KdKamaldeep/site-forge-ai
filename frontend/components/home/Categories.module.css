@@ -11,7 +11,7 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border, #e2e8f0);
 }
 
 .title {
@@ -19,14 +19,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6b7280;
+  color: var(--muted, #64748b);
   margin: 0;
 }
 
 .scrollButton {
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--muted, #64748b);
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
@@ -35,7 +35,7 @@
 }
 
 .scrollButton:hover {
-  color: #1f2937;
+  color: var(--text, #334155);
 }
 
 .list {
@@ -56,14 +56,12 @@
   justify-content: space-between;
   align-items: center;
   text-decoration: none;
-  color: #1f2937;
+  color: var(--text, #334155);
   padding: 0.5rem 0;
   transition: color 0.2s;
 }
 
-.link:hover {
-  color: #2563eb;
-}
+/* No color change on hover - keep original color */
 
 .categoryName {
   font-size: 0.875rem;

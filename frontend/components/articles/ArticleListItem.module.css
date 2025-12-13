@@ -23,22 +23,7 @@
   text-transform: capitalize;
 }
 
-.articleLink:hover .articleTitle {
-  color: #2563eb;
-}
-
-/* Varied hover colors for article list items */
-.articleItem:nth-child(3n+1) .articleLink:hover .articleTitle {
-  color: #2563eb; /* Blue */
-}
-
-.articleItem:nth-child(3n+2) .articleLink:hover .articleTitle {
-  color: #7c3aed; /* Purple */
-}
-
-.articleItem:nth-child(3n) .articleLink:hover .articleTitle {
-  color: #059669; /* Green */
-}
+/* No color change on hover - keep original color */
 
 .articleExcerpt {
   font-size: 1rem;

@@ -45,17 +45,18 @@ export default function ThemeVariables({ theme }) {
   const themeColors = theme.theme?.colors || theme.colors || {};
   const themeTypography = theme.theme?.typography || theme.typography || {};
 
-  // Default colors (lively but trustworthy)
+  // Default colors (professional editorial palette)
   const defaults = {
     bg: '#ffffff',
     surface: '#ffffff',
-    text: '#0f172a',
-    muted: '#475569',
-    border: '#e2e8f0',
-    primary: '#2563eb',
+    text: '#334155', // Body text color
+    muted: '#64748b', // Muted/secondary text
+    border: '#e2e8f0', // Borders/dividers
+    primary: '#1d4ed8', // Professional editorial blue
     accent: '#f59e0b',
-    link: '#1d4ed8',
-    linkHover: '#1e40af',
+    link: '#1d4ed8', // Default link color
+    linkHover: '#1e40af', // Link hover (never black)
+    linkVisited: '#4338ca', // Visited links
   };
 
   // Get tenant colors
@@ -77,9 +78,10 @@ export default function ThemeVariables({ theme }) {
     primary = defaults.primary;
   }
 
-  // Derive link colors from primary
-  const link = themeColors.secondary || primary;
-  const linkHover = link === primary ? defaults.linkHover : link;
+  // Use proper link colors (never derive from primary if it would make links black)
+  const link = themeColors.link || defaults.link;
+  const linkHover = themeColors.linkHover || defaults.linkHover;
+  const linkVisited = themeColors.linkVisited || defaults.linkVisited;
 
   const cssVariables = {
     // New enhanced color system
@@ -92,7 +94,7 @@ export default function ThemeVariables({ theme }) {
     '--border': defaults.border,
     '--link': link,
     '--link-hover': linkHover,
-    '--link-visited': '#4338ca',
+    '--link-visited': linkVisited,
     '--linkHover': linkHover, // Legacy compatibility
     // Legacy compatibility
     '--secondary': themeColors.secondary || defaults.muted,
@@ -102,8 +104,8 @@ export default function ThemeVariables({ theme }) {
     '--text-muted': '#64748b',
     '--border-light': '#f1f5f9',
     // Typography
-    '--heading-font': themeTypography.headingFont || themeTypography.fontFamily || 'Arial, sans-serif',
-    '--body-font': themeTypography.fontFamily || 'Arial, sans-serif',
+    '--heading-font': themeTypography.headingFont || themeTypography.fontFamily || '"Montserrat", sans-serif',
+    '--body-font': themeTypography.fontFamily || '"Source Sans Pro", sans-serif',
     '--font-size': themeTypography.fontSize || '16px',
   };
 
