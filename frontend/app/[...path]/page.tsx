@@ -97,6 +97,7 @@ export default async function DynamicPathPage({ params }) {
               monetizationMode={page.monetizationMode}
               categoryKey={page.categoryKey}
               primaryKeyword={page.primaryKeyword}
+              thumbnail={page.thumbnail}
             />
           );
         }
@@ -200,6 +201,7 @@ export default async function DynamicPathPage({ params }) {
             categoryKey={page.categoryKey}
             primaryKeyword={page.primaryKeyword}
             updatedAt={page.updatedAt}
+            thumbnail={page.thumbnail}
           />
         </>
       );

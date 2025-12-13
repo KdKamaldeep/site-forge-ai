@@ -22,7 +22,15 @@ export default function PostCard({ article }) {
     <article className={styles.postCard}>
       <Link href={articleUrl} className={styles.cardLink}>
         <div className={styles.imageWrapper}>
-          {article.meta?.ogImage ? (
+          {article.thumbnail?.url ? (
+            <img 
+              src={article.thumbnail.url} 
+              alt={article.title}
+              className={styles.cardImage}
+              width={article.thumbnail.width || 1200}
+              height={article.thumbnail.height || 675}
+            />
+          ) : article.meta?.ogImage ? (
             <img 
               src={article.meta.ogImage} 
               alt={article.title}

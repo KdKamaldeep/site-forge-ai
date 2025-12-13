@@ -13,9 +13,9 @@
   --border: #e2e8f0;
   --primary: #1d4ed8;
   --accent: #f59e0b;
-  --link: #1d4ed8;
-  --link-hover: #1e40af;
-  --link-visited: #4338ca;
+  --link: #1b1e25;
+  --link-hover: rgb(51, 53, 61);
+  --link-visited: rgb(42, 40, 57);
   
   /* Legacy compatibility */
   --linkHover: var(--link-hover);
@@ -81,7 +81,7 @@ a:hover {
 }
 
 a:visited {
-  color: var(--link-visited, #4338ca);
+  color: var(--link-visited, #403e53);
 }
 
 a:focus-visible {

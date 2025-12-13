@@ -23,7 +23,15 @@ export default function PopularPosts({ articles }) {
               className={styles.link}
             >
               <div className={styles.thumbnail}>
-                {article.meta?.ogImage ? (
+                {article.thumbnail?.url ? (
+                  <img 
+                    src={article.thumbnail.url} 
+                    alt={article.title} 
+                    className={styles.thumbnailImage}
+                    width={article.thumbnail.width || 1200}
+                    height={article.thumbnail.height || 675}
+                  />
+                ) : article.meta?.ogImage ? (
                   <img src={article.meta.ogImage} alt={article.title} className={styles.thumbnailImage} />
                 ) : (
                   <div className={styles.thumbnailPlaceholder}></div>

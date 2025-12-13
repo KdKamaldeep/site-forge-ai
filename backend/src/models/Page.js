@@ -113,6 +113,35 @@ const pageSchema = new mongoose.Schema({
     trim: true,
     default: null
   },
+  thumbnail: {
+    url: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    width: {
+      type: Number,
+      default: null
+    },
+    height: {
+      type: Number,
+      default: null
+    },
+    source: {
+      type: String,
+      enum: ['gemini'],
+      default: null
+    },
+    generatedAt: {
+      type: Date,
+      default: null
+    },
+    hash: {
+      type: String,
+      trim: true,
+      default: null
+    }
+  },
   updatedAt: {
     type: Date,
     default: Date.now

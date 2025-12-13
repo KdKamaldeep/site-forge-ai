@@ -27,8 +27,26 @@ export class AIAuditService {
         return null;
       }
 
+      // Ensure tenantId is either a valid ObjectId or null (not a string)
+      let validTenantId = tenantId;
+      if (tenantId && typeof tenantId === 'string') {
+        // Try to convert to ObjectId if it looks like one, otherwise set to null
+        try {
+          const mongoose = (await import('mongoose')).default;
+          if (mongoose.Types.ObjectId.isValid(tenantId)) {
+            validTenantId = new mongoose.Types.ObjectId(tenantId);
+          } else {
+            // Not a valid ObjectId string, set to null
+            validTenantId = null;
+          }
+        } catch (err) {
+          // If mongoose not available or conversion fails, use null
+          validTenantId = null;
+        }
+      }
+
       const audit = await AIAudit.create({
-        tenantId,
+        tenantId: validTenantId,
         service,
         operation,
         status,

@@ -7,7 +7,7 @@ import KeywordCluster from '../models/KeywordCluster.js';
 import { TenantService } from './TenantService.js';
 import { PageService } from './PageService.js';
 import { PillarService } from './PillarService.js';
-import OpenAI from 'openai';
+import { generateText } from './AIProviderService.js';
 import slugify from '../utils/slugify.js';
 
 export class ClusterService {
@@ -60,12 +60,6 @@ export class ClusterService {
       throw new Error('Tenant not found');
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
-    }
-
-    const openai = new OpenAI({ apiKey });
     const brandName = tenant.brandIdentity?.brandName || tenant.name;
     const tone = tenant.brandIdentity?.tone || 'friendly';
     const forbiddenTopics = tenant.compliance?.forbiddenTopics || [];
@@ -104,24 +98,18 @@ Ensure:
 - Mix of informational (70%), commercial (20%), lead (10%) intent`;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || process.env.GPT_MODEL || 'gpt-4o-mini',
+      const content = await generateText({
         messages: [
-          {
-            role: 'system',
-            content: 'You are an SEO expert. Return a valid JSON array of topic objects. The response must be a JSON array starting with [ and ending with ].'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        systemPrompt: 'You are an SEO expert. Return a valid JSON array of topic objects. The response must be a JSON array starting with [ and ending with ].',
         temperature: 0.8,
-        max_tokens: 3000
-        // Removed response_format: json_object to allow arrays
+        maxTokens: 3000,
+        jsonMode: false // Keep false to allow arrays
       });
-
-      const content = response.choices[0].message.content.trim();
       console.log(`📝 Raw AI response (first 200 chars): ${content.substring(0, 200)}...`);
       
       let topics = [];

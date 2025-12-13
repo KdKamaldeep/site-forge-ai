@@ -24,6 +24,7 @@ export default function PageRenderer({
   categoryKey,
   updatedAt,
   publishedAt,
+  thumbnail,
 }) {
   // Render UX Layout if available (structured layout)
   if (layout?.sections && Array.isArray(layout.sections) && layout.sections.length > 0) {
@@ -56,6 +57,7 @@ export default function PageRenderer({
         publishedAt={publishedAt}
         intent={intent || 'informational'}
         monetizationMode={monetizationMode || 'adsense'}
+        thumbnail={thumbnail}
       />
     </>
   );

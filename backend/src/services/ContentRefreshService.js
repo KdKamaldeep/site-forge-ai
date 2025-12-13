@@ -1,22 +1,7 @@
-import OpenAI from 'openai';
+import { generateText } from './AIProviderService.js';
 import { PageService } from './PageService.js';
 import { KeywordService } from './KeywordService.js';
 import { UXLayoutService } from './UXLayoutService.js';
-import { getOpenAIModel } from '../config/openaiConfig.js';
-
-// Lazy initialization of OpenAI client
-let openaiClient = null;
-
-function getOpenAIClient() {
-  if (!openaiClient) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set in environment variables');
-    }
-    openaiClient = new OpenAI({ apiKey });
-  }
-  return openaiClient;
-}
 
 export class ContentRefreshService {
   /**
@@ -29,7 +14,6 @@ export class ContentRefreshService {
     }
 
     try {
-      const openai = getOpenAIClient();
       // Generate improved content
       const prompt = `Improve and expand the following page content. 
 Make it more engaging, SEO-friendly, and comprehensive (aim for 1000-2000 words).
@@ -40,23 +24,17 @@ ${page.content}
 
 Return the improved content only, no explanations.`;
 
-      const response = await openai.chat.completions.create({
-        model: getOpenAIModel(),
+      const improvedContent = await generateText({
         messages: [
-          {
-            role: 'system',
-            content: 'You are a professional content writer specializing in SEO-optimized articles.'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        systemPrompt: 'You are a professional content writer specializing in SEO-optimized articles.',
         temperature: 0.7,
-        max_tokens: 3000
+        maxTokens: 3000
       });
-
-      const improvedContent = response.choices[0].message.content.trim();
 
       // Generate new keywords
       const keywords = await KeywordService.generateKeywords(page.title, 10, page.tenantId);
@@ -95,7 +73,6 @@ Return the improved content only, no explanations.`;
     }
 
     try {
-      const openai = getOpenAIClient();
       const prompt = `Expand and improve the following section of content. 
 Make it more detailed, informative, and engaging (aim for 300-500 words).
 
@@ -104,23 +81,17 @@ ${sectionText}
 
 Return the expanded section only.`;
 
-      const response = await openai.chat.completions.create({
-        model: getOpenAIModel(),
+      return await generateText({
         messages: [
-          {
-            role: 'system',
-            content: 'You are a professional content writer.'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        systemPrompt: 'You are a professional content writer.',
         temperature: 0.7,
-        max_tokens: 1000
+        maxTokens: 1000
       });
-
-      return response.choices[0].message.content.trim();
     } catch (error) {
       console.error('Error expanding section:', error);
       throw error;

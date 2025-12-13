@@ -13,11 +13,11 @@ import { SchemaMarkupService } from '../services/SchemaMarkupService.js';
 import { ImageOptimizationService } from '../services/ImageOptimizationService.js';
 import { GeminiImageService } from '../services/GeminiImageService.js';
 import { ContentImageService } from '../services/ContentImageService.js';
+import { ThumbnailService } from '../services/ThumbnailService.js';
 import { ContentQualityValidator } from '../utils/contentQualityValidator.js';
 import { TenantService } from '../services/TenantService.js';
 import { KeywordClusterService } from '../services/KeywordClusterService.js';
 import { AIAuditService } from '../services/AIAuditService.js';
-import { getOpenAIModel } from '../config/openaiConfig.js';
 import slugify from '../utils/slugify.js';
 
 export class MicrositeBuilderAgent {
@@ -275,6 +275,32 @@ export class MicrositeBuilderAgent {
               console.warn(`⚠️  Could not mark keyword in cluster: ${clusterError.message}`);
             }
 
+            // Generate thumbnail for the page (non-blocking)
+            try {
+              // Use page.categoryKey if available, otherwise null
+              const categoryName = page.categoryKey 
+                ? page.categoryKey.charAt(0).toUpperCase() + page.categoryKey.slice(1)
+                : null;
+              
+              const thumbnail = await ThumbnailService.generateThumbnailWithRetry(
+                page,
+                tenant,
+                categoryName
+              );
+
+              if (thumbnail) {
+                // Update page with thumbnail
+                page.thumbnail = thumbnail;
+                await page.save();
+                console.log(`✅ Thumbnail generated and saved for: ${page.title}`);
+              } else {
+                console.warn(`⚠️  Thumbnail generation failed for: ${page.title} (page still created)`);
+              }
+            } catch (thumbnailError) {
+              // Don't block page creation if thumbnail fails
+              console.warn(`⚠️  Thumbnail generation error (non-blocking): ${thumbnailError.message}`);
+            }
+
             results.pages.push({ ...page.toObject(), action: 'created' });
           }
         } catch (error) {
@@ -343,12 +369,7 @@ export class MicrositeBuilderAgent {
    */
   static async generateContentWithEAT(topic, keywords, tenant) {
     const startTime = Date.now();
-    const OpenAI = (await import('openai')).default;
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set in environment variables');
-    }
-    const openai = new OpenAI({ apiKey });
+    const { generateText } = await import('../services/AIProviderService.js');
 
     // Extract brand identity and compliance rules from tenant DNA
     const brandIdentity = tenant.brandIdentity || {};
@@ -452,26 +473,20 @@ REQUIREMENTS:
 
 Write the article now, ensuring it's comprehensive, valuable, and optimized for both search engines and human readers.`;
 
-    const response = await openai.chat.completions.create({
-      model: getOpenAIModel(),
+    const content = await generateText({
       messages: [
-        {
-          role: 'system',
-          content: `You are an expert content writer specializing in SEO-optimized, E-E-A-T compliant articles. 
-You write comprehensive, well-researched content that demonstrates expertise, experience, authoritativeness, and trustworthiness.
-Your articles are optimized for Google AdSense approval and search engine visibility.
-You always write original, valuable content that provides real value to readers.`
-        },
         {
           role: 'user',
           content: prompt
         }
       ],
+      systemPrompt: `You are an expert content writer specializing in SEO-optimized, E-E-A-T compliant articles. 
+You write comprehensive, well-researched content that demonstrates expertise, experience, authoritativeness, and trustworthiness.
+Your articles are optimized for Google AdSense approval and search engine visibility.
+You always write original, valuable content that provides real value to readers.`,
       temperature: 0.7,
-      max_tokens: 4000
+      maxTokens: 4000
     });
-
-    const content = response.choices[0].message.content.trim();
 
     // Extract meta information
     const metaDescription = this.extractMetaDescription(content);

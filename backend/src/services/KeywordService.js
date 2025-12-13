@@ -1,53 +1,37 @@
-import OpenAI from 'openai';
-import { getOpenAIModel } from '../config/openaiConfig.js';
-
-// Lazy initialization of OpenAI client
-let openaiClient = null;
-
-function getOpenAIClient() {
-  if (!openaiClient) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set in environment variables');
-    }
-    openaiClient = new OpenAI({ apiKey });
-  }
-  return openaiClient;
-}
+import { generateText } from './AIProviderService.js';
 
 export class KeywordService {
   /**
-   * Generate SEO keywords using OpenAI
+   * Generate SEO keywords using configured AI provider
    */
   static async generateKeywords(topic, count = 10, tenantId = null) {
     try {
-      const openai = getOpenAIClient();
       const prompt = `Generate ${count} highly relevant SEO keywords for the topic: "${topic}". 
 Return only a JSON array of keyword strings, no explanations.`;
 
-      const response = await openai.chat.completions.create({
-        model: getOpenAIModel(),
+      const content = await generateText({
         messages: [
-          {
-            role: 'system',
-            content: 'You are an SEO expert. Return only valid JSON arrays.'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        systemPrompt: 'You are an SEO expert. Return only valid JSON arrays.',
         temperature: 0.7,
-        max_tokens: 200
+        maxTokens: 200,
+        jsonMode: true
       });
-
-      const content = response.choices[0].message.content.trim();
       // Try to parse JSON array
       let keywords = [];
       
       try {
-        keywords = JSON.parse(content);
-        if (!Array.isArray(keywords)) {
+        const parsed = JSON.parse(content);
+        // Handle both direct array and object with keywords property
+        if (Array.isArray(parsed)) {
+          keywords = parsed;
+        } else if (parsed.keywords && Array.isArray(parsed.keywords)) {
+          keywords = parsed.keywords;
+        } else {
           keywords = content.split(',').map(k => k.trim().replace(/["\[\]]/g, ''));
         }
       } catch (e) {

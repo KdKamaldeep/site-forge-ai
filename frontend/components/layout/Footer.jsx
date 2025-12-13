@@ -75,7 +75,15 @@ export default function Footer({ navigation, tenant, categories = [], popularPos
               popularPosts.map((post) => (
                 <Link key={post._id} href={post.categoryKey ? `/${post.categoryKey}/${post.slug}` : `/${post.slug}`} className={styles.popularPost}>
                   <div className={styles.popularThumbnail}>
-                    {post.meta?.ogImage ? (
+                    {post.thumbnail?.url ? (
+                      <img 
+                        src={post.thumbnail.url} 
+                        alt={post.title} 
+                        className={styles.popularImage}
+                        width={post.thumbnail.width || 1200}
+                        height={post.thumbnail.height || 675}
+                      />
+                    ) : post.meta?.ogImage ? (
                       <img src={post.meta.ogImage} alt={post.title} className={styles.popularImage} />
                     ) : (
                       <div className={styles.popularPlaceholder}></div>

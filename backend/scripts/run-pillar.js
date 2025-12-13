@@ -59,19 +59,29 @@ async function activatePillarForCategory(tenantId, categoryKey) {
 
   // If there's an active pillar for a different category, complete it first
   if (currentActive && currentActive.categoryKey !== categoryKey) {
-    console.log(`   🔄 Completing current pillar "${currentActive.pillarKeyword}" to switch to ${categoryKey}`);
+    console.log(`   🔄 Completing current pillar "${currentActive.pillarKeyword || 'null'}" to switch to ${categoryKey}`);
     
-    // Move current pillar to history
-    if (!tenant.pillarHistoryNew) {
-      tenant.pillarHistoryNew = [];
+    // Validate activePillar has required fields before moving to history
+    const hasValidPillar = currentActive.categoryKey && 
+                          currentActive.pillarKeyword && 
+                          currentActive.createdAt;
+    
+    // Move current pillar to history only if valid
+    if (hasValidPillar) {
+      if (!tenant.pillarHistoryNew) {
+        tenant.pillarHistoryNew = [];
+      }
+      tenant.pillarHistoryNew.push({
+        categoryKey: currentActive.categoryKey,
+        pillarKeyword: currentActive.pillarKeyword,
+        targetSupportingCount: currentActive.targetSupportingCount || 30,
+        createdAt: currentActive.createdAt,
+        completedAt: new Date()
+      });
+      console.log(`   ✅ Moved pillar to history`);
+    } else {
+      console.warn(`   ⚠️  Active pillar is incomplete, skipping history entry`);
     }
-    tenant.pillarHistoryNew.push({
-      categoryKey: currentActive.categoryKey,
-      pillarKeyword: currentActive.pillarKeyword,
-      targetSupportingCount: currentActive.targetSupportingCount,
-      createdAt: currentActive.createdAt,
-      completedAt: new Date()
-    });
   }
 
   // Generate a new pillar keyword for the desired category
@@ -114,8 +124,66 @@ async function activatePillarForCategory(tenantId, categoryKey) {
 }
 
 /**
+ * Get list of already processed categories from pillar history
+ */
+function getProcessedCategories(tenant) {
+  const processed = new Set();
+  
+  // Check pillar history for completed categories
+  if (tenant.pillarHistoryNew && Array.isArray(tenant.pillarHistoryNew)) {
+    tenant.pillarHistoryNew.forEach(historyItem => {
+      if (historyItem.categoryKey && historyItem.completedAt) {
+        processed.add(historyItem.categoryKey);
+      }
+    });
+  }
+  
+  return processed;
+}
+
+/**
+ * Find the starting index for resumption
+ * Returns the index of the first unprocessed category, or 0 if all are processed
+ * Priority: Active pillar > First unprocessed > Start from beginning
+ */
+function findResumeIndex(contentPillars, processedCategories, currentActivePillar) {
+  // PRIORITY 1: If there's an active pillar, ALWAYS resume from that category
+  // This handles the case where processing stopped mid-category
+  if (currentActivePillar && currentActivePillar.categoryKey) {
+    const activeCategoryIndex = contentPillars.findIndex(
+      p => p.categoryKey === currentActivePillar.categoryKey
+    );
+    
+    if (activeCategoryIndex !== -1) {
+      const isProcessed = processedCategories.has(currentActivePillar.categoryKey);
+      if (isProcessed) {
+        console.log(`\n   ℹ️  Active pillar category ${currentActivePillar.categoryKey} is already completed.`);
+        console.log(`   🔄 Will continue to next unprocessed category...`);
+      } else {
+        console.log(`\n🔄 Resuming from active pillar category: ${currentActivePillar.categoryKey}`);
+        console.log(`   (Processing was interrupted during this category)`);
+        return activeCategoryIndex;
+      }
+    }
+  }
+  
+  // PRIORITY 2: Find first unprocessed category
+  for (let i = 0; i < contentPillars.length; i++) {
+    if (!processedCategories.has(contentPillars[i].categoryKey)) {
+      console.log(`\n🔄 Resuming from first unprocessed category: ${contentPillars[i].categoryKey}`);
+      return i;
+    }
+  }
+  
+  // PRIORITY 3: All categories processed, start from beginning
+  console.log(`\n   ℹ️  All categories have been processed. Starting fresh cycle...`);
+  return 0;
+}
+
+/**
  * Simplified version: Just ensure we process each category
  * We'll generate pages and let the system handle rotation naturally
+ * Now with resumption support - resumes from where it left off
  */
 async function generateForAllPillars(tenantId, countPerPillar) {
   const tenant = await TenantService.getTenantById(tenantId);
@@ -133,16 +201,50 @@ async function generateForAllPillars(tenantId, countPerPillar) {
     console.log(`   ${index + 1}. ${pillar.categoryKey} - ${pillar.description}`);
   });
 
-  const allResults = [];
-  const processedCategories = new Set();
+  // Check which categories have already been processed
+  const processedCategories = getProcessedCategories(tenant);
+  const currentActivePillar = tenant.activePillar;
+  
+  console.log(`\n📊 Resumption Check:`);
+  console.log(`   ✅ Already processed: ${Array.from(processedCategories).join(', ') || 'none'}`);
+  console.log(`   📌 Current active pillar: ${currentActivePillar?.categoryKey || 'none'}`);
+  if (currentActivePillar?.pillarKeyword) {
+    console.log(`   📝 Active pillar keyword: "${currentActivePillar.pillarKeyword}"`);
+  }
+  
+  // Find where to resume
+  const startIndex = findResumeIndex(contentPillars, processedCategories, currentActivePillar);
+  
+  if (startIndex > 0 || (currentActivePillar && !processedCategories.has(currentActivePillar.categoryKey))) {
+    const resumeCategory = contentPillars[startIndex]?.categoryKey || currentActivePillar?.categoryKey;
+    console.log(`\n   ▶️  Resuming from category ${startIndex + 1}/${contentPillars.length}: ${resumeCategory}`);
+    console.log(`   💡 This category was not completed in the previous run`);
+  } else if (processedCategories.size === contentPillars.length) {
+    console.log(`\n   ℹ️  All categories have been processed. Starting fresh cycle...`);
+  }
 
-  // Process each pillar category
-  for (let i = 0; i < contentPillars.length; i++) {
+  const allResults = [];
+  const newlyProcessedCategories = new Set();
+
+  // Process each pillar category starting from resume point
+  for (let i = startIndex; i < contentPillars.length; i++) {
     const pillarConfig = contentPillars[i];
     const categoryKey = pillarConfig.categoryKey;
 
+    // Skip if already processed (unless we're resuming from active pillar)
+    if (processedCategories.has(categoryKey) && 
+        (!currentActivePillar || currentActivePillar.categoryKey !== categoryKey)) {
+      console.log(`\n${'='.repeat(70)}`);
+      console.log(`⏭️  Skipping Pillar ${i + 1}/${contentPillars.length}: ${categoryKey} (already processed)`);
+      console.log(`${'='.repeat(70)}\n`);
+      continue;
+    }
+
     console.log(`\n${'='.repeat(70)}`);
     console.log(`📌 Processing Pillar ${i + 1}/${contentPillars.length}: ${categoryKey}`);
+    if (processedCategories.has(categoryKey)) {
+      console.log(`   (Resuming from active pillar)`);
+    }
     console.log(`${'='.repeat(70)}\n`);
 
     try {
@@ -163,6 +265,37 @@ async function generateForAllPillars(tenantId, countPerPillar) {
 
       const pagesCreated = result.pagesCreated || [];
       
+      // Mark this category as completed in history (if not already there)
+      // This ensures resumption works correctly on next run
+      const tenant = await TenantService.getTenantById(tenantId);
+      if (tenant && tenant.activePillar && tenant.activePillar.categoryKey === categoryKey) {
+        const isAlreadyInHistory = tenant.pillarHistoryNew?.some(
+          h => h.categoryKey === categoryKey && h.completedAt
+        );
+        
+        if (!isAlreadyInHistory) {
+          // Mark as completed by moving to history
+          if (!tenant.pillarHistoryNew) {
+            tenant.pillarHistoryNew = [];
+          }
+          
+          // Only mark if we have valid pillar data
+          if (tenant.activePillar.categoryKey && 
+              tenant.activePillar.pillarKeyword && 
+              tenant.activePillar.createdAt) {
+            tenant.pillarHistoryNew.push({
+              categoryKey: tenant.activePillar.categoryKey,
+              pillarKeyword: tenant.activePillar.pillarKeyword,
+              targetSupportingCount: tenant.activePillar.targetSupportingCount || 30,
+              createdAt: tenant.activePillar.createdAt,
+              completedAt: new Date()
+            });
+            await tenant.save();
+            console.log(`   ✅ Marked category ${categoryKey} as completed in history`);
+          }
+        }
+      }
+      
       allResults.push({
         categoryKey,
         pillarKeyword: activePillar.pillarKeyword,
@@ -172,7 +305,7 @@ async function generateForAllPillars(tenantId, countPerPillar) {
         errors: result.errors || []
       });
 
-      processedCategories.add(categoryKey);
+      newlyProcessedCategories.add(categoryKey);
 
       console.log(`\n   ✅ Completed ${categoryKey}: Created ${pagesCreated.length} page(s)`);
       
@@ -183,13 +316,22 @@ async function generateForAllPillars(tenantId, countPerPillar) {
       }
 
     } catch (error) {
-      console.error(`   ❌ Error processing ${categoryKey}:`, error.message);
+      console.error(`\n   ❌ Error processing ${categoryKey}:`, error.message);
+      console.error(`   ⚠️  Processing stopped for this category.`);
+      console.error(`   💡 The active pillar remains set to: ${categoryKey}`);
+      console.error(`   🔄 Run the script again to resume from this category.`);
+      
       allResults.push({
         categoryKey,
         success: false,
         error: error.message,
         pagesCreated: 0
       });
+      
+      // Save the current state before exiting
+      // The active pillar is already set, so resumption will work on next run
+      // Re-throw to stop processing and allow resumption on next run
+      throw error;
     }
   }
 
@@ -244,6 +386,19 @@ async function runPillarGeneration() {
     console.log(`✅ Found tenant: ${tenant.name} (${tenant.domain})`);
     console.log(`📝 Will create ${countPerPillar} page(s) for each pillar\n`);
 
+    // Show resumption status before starting
+    const activePillar = tenant.activePillar;
+    if (activePillar && activePillar.categoryKey) {
+      const processedCategories = getProcessedCategories(tenant);
+      const isProcessed = processedCategories.has(activePillar.categoryKey);
+      
+      if (!isProcessed) {
+        console.log(`🔄 RESUMPTION MODE:`);
+        console.log(`   Previous run was interrupted during: ${activePillar.categoryKey}`);
+        console.log(`   Will resume from this category\n`);
+      }
+    }
+
     // Generate for all pillars
     const results = await generateForAllPillars(tenantId, countPerPillar);
 
@@ -276,10 +431,33 @@ async function runPillarGeneration() {
     console.log('👋 Disconnected from MongoDB\n');
     process.exit(0);
   } catch (error) {
-    console.error('\n❌ Fatal error:', error.message);
+    console.error('\n' + '='.repeat(70));
+    console.error('❌ Fatal error:', error.message);
+    console.error('='.repeat(70));
+    
+    // Get tenant again to show current state
+    try {
+      const tenant = await TenantService.getTenantByDomain(process.argv[2]);
+      if (tenant) {
+        const activePillar = tenant.activePillar;
+        if (activePillar && activePillar.categoryKey) {
+          console.error(`\n💡 Current state:`);
+          console.error(`   📌 Active pillar category: ${activePillar.categoryKey}`);
+          console.error(`   📝 Pillar keyword: "${activePillar.pillarKeyword}"`);
+          console.error(`\n🔄 To resume:`);
+          console.error(`   Run the script again: node scripts/run-pillar.js ${tenant.domain}`);
+          console.error(`   It will automatically resume from: ${activePillar.categoryKey}`);
+        }
+      }
+    } catch (err) {
+      // Ignore errors when trying to show state
+    }
+    
     if (process.env.NODE_ENV === 'development') {
+      console.error('\nStack trace:');
       console.error(error.stack);
     }
+    
     await mongoose.disconnect().catch(() => {});
     process.exit(1);
   }

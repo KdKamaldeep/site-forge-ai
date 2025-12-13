@@ -25,7 +25,15 @@ export default function FeaturedGrid({ articles = [] }) {
                 className={styles.featuredLink}
               >
                 <div className={styles.imageWrapper}>
-                  {article.meta?.ogImage ? (
+                  {article.thumbnail?.url ? (
+                    <img 
+                      src={article.thumbnail.url} 
+                      alt={article.title}
+                      className={styles.featuredImage}
+                      width={article.thumbnail.width || 1200}
+                      height={article.thumbnail.height || 675}
+                    />
+                  ) : article.meta?.ogImage ? (
                     <img 
                       src={article.meta.ogImage} 
                       alt={article.title}

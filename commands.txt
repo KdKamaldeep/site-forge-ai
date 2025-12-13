@@ -1,0 +1,8 @@
+# Generate 3 pages for each pillar (default)
+node scripts/run-pillar.js example.com
+
+# Generate 5 pages for each pillar
+node scripts/run-pillar.js example.com --count 5
+
+# Generate 1 page for each pillar
+node scripts/run-pillar.js practicalthinking.com --count 3

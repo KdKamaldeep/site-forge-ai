@@ -1,7 +1,7 @@
 import KeywordCluster from '../models/KeywordCluster.js';
 import { TenantService } from './TenantService.js';
 import { PageService } from './PageService.js';
-import OpenAI from 'openai';
+import { generateText } from './AIProviderService.js';
 
 export class KeywordClusterService {
   /**
@@ -49,12 +49,6 @@ export class KeywordClusterService {
       throw new Error('Tenant not found');
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
-    }
-
-    const openai = new OpenAI({ apiKey });
     const niche = this.inferNiche(tenant);
 
     // AI proposes 3 pillar candidates
@@ -78,24 +72,18 @@ Return JSON with format:
   ]
 }`;
 
-    const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || process.env.GPT_MODEL || 'gpt-4o-mini',
+    const content = await generateText({
       messages: [
-        {
-          role: 'system',
-          content: 'You are an SEO expert specializing in pillar content strategy. Return valid JSON only.'
-        },
         {
           role: 'user',
           content: prompt
         }
       ],
+      systemPrompt: 'You are an SEO expert specializing in pillar content strategy. Return valid JSON only.',
       temperature: 0.7,
-      max_tokens: 500,
-      response_format: { type: 'json_object' }
+      maxTokens: 500,
+      jsonMode: true
     });
-
-    const content = response.choices[0].message.content.trim();
     let candidates = [];
 
     try {
@@ -151,12 +139,6 @@ Return JSON with format:
     const existingSlugs = (pagesList.pages || []).map(p => p.slug.toLowerCase());
     const existingTitles = (pagesList.pages || []).map(p => p.title.toLowerCase());
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
-    }
-
-    const openai = new OpenAI({ apiKey });
     const niche = this.inferNiche(tenant);
 
     const prompt = `Generate ${count} long-tail supporting keywords for the pillar keyword "${cluster.pillarKeyword}" in the ${niche} niche.
@@ -181,24 +163,18 @@ Return JSON with format:
   ]
 }`;
 
-    const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || process.env.GPT_MODEL || 'gpt-4o-mini',
+    const content = await generateText({
       messages: [
-        {
-          role: 'system',
-          content: 'You are an SEO expert. Generate unique, long-tail supporting keywords. Return valid JSON only.'
-        },
         {
           role: 'user',
           content: prompt
         }
       ],
+      systemPrompt: 'You are an SEO expert. Generate unique, long-tail supporting keywords. Return valid JSON only.',
       temperature: 0.8,
-      max_tokens: 800,
-      response_format: { type: 'json_object' }
+      maxTokens: 800,
+      jsonMode: true
     });
-
-    const content = response.choices[0].message.content.trim();
     let keywords = [];
 
     try {

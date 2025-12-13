@@ -1,21 +1,6 @@
-import OpenAI from 'openai';
+import { generateText } from './AIProviderService.js';
 import { validateUXLayout, getDefaultUXLayout } from '../utils/uxSchemaValidator.js';
 import { getLayoutStyle, getTenantLayoutStyle } from '../utils/layoutStyles.js';
-import { getOpenAIModel } from '../config/openaiConfig.js';
-
-// Lazy initialization of OpenAI client
-let openaiClient = null;
-
-function getOpenAIClient() {
-  if (!openaiClient) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set in environment variables');
-    }
-    openaiClient = new OpenAI({ apiKey });
-  }
-  return openaiClient;
-}
 
 export class UXLayoutService {
   /**
@@ -27,7 +12,6 @@ export class UXLayoutService {
    */
   static async generateUXLayout(content, style = 'standard', tenant = null) {
     try {
-      const openai = getOpenAIClient();
       
       // Get layout style details if tenant provided
       let styleDetails = null;
@@ -114,26 +98,18 @@ Example output format:
   ]
 }`;
 
-      const response = await openai.chat.completions.create({
-        model: getOpenAIModel(),
+      const responseContent = await generateText({
         messages: [
-          {
-            role: 'system',
-            content: 'You are a UX designer. You MUST return ONLY valid JSON objects with the exact structure: { "sections": [...] }. Each section must have a "type" field matching: hero, paragraph, grid, infoBox, cta, imageBlock, featureList, or comparisonTable. Return ONLY JSON, no markdown, no explanations.'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        systemPrompt: 'You are a UX designer. You MUST return ONLY valid JSON objects with the exact structure: { "sections": [...] }. Each section must have a "type" field matching: hero, paragraph, grid, infoBox, cta, imageBlock, featureList, or comparisonTable. Return ONLY JSON, no markdown, no explanations.',
         temperature: 0.7,
-        max_tokens: 2500
-        // Note: response_format: { type: 'json_object' } available in gpt-4-turbo-preview and newer
-        // Uncomment if using compatible model:
-        // response_format: { type: 'json_object' }
+        maxTokens: 2500,
+        jsonMode: true
       });
-
-      const responseContent = response.choices[0].message.content.trim();
       
       // Clean JSON (remove markdown code blocks if present)
       let jsonContent = responseContent

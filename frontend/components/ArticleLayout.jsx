@@ -21,6 +21,7 @@ export default function ArticleLayout({
   publishedAt,
   intent,
   monetizationMode,
+  thumbnail,
 }) {
   const contentRef = useRef(null);
   const [toc, setToc] = useState([]);
@@ -180,6 +181,19 @@ export default function ArticleLayout({
       <div className={styles.articleLayout}>
         {/* Main content */}
         <div className={styles.articleMain}>
+          {/* Hero Image (thumbnail fallback) */}
+          {thumbnail?.url && (
+            <div className={styles.heroImageWrapper}>
+              <img 
+                src={thumbnail.url} 
+                alt={title}
+                className={styles.heroImage}
+                width={thumbnail.width || 1200}
+                height={thumbnail.height || 675}
+              />
+            </div>
+          )}
+          
           {/* Article Header */}
           <header className={styles.articleHeader}>
             <h1 className={styles.articleTitle}>{formatTitle(title)}</h1>

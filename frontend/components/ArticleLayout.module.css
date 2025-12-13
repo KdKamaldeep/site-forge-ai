@@ -50,6 +50,20 @@
   min-width: 0; /* Prevent grid overflow */
 }
 
+.heroImageWrapper {
+  width: 100%;
+  margin-bottom: var(--spacing-xl, 3rem);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.heroImage {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
 .articleHeader {
   margin-bottom: var(--spacing-xl, 3rem);
   padding-bottom: var(--spacing-lg, 2rem);

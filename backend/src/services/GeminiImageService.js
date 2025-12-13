@@ -1,16 +1,23 @@
 /**
- * Gemini Image Generation Service
- * Uses Google Gemini API to enhance image prompts and extract keywords
- * Downloads images and saves them locally, serving from /images endpoint
- * 
- * Note: Gemini is multimodal (can understand images) but doesn't directly generate images.
- * For actual image generation, Google offers Imagen 3 through Vertex AI.
- * This service uses Gemini to create better prompts/keywords, then fetches images from Unsplash.
- * 
- * Future: Can be upgraded to use Imagen 3 API for direct image generation.
+ * Gemini Image Generation Service (FIXED)
+ * Uses Google Gen AI SDK (@google/genai) for:
+ *  - Gemini image generation models (generateContent with inlineData)
+ *  - Imagen models (generateImages with imageBytes)
+ *
+ * Saves generated images locally and serves them from /images endpoint
+ *
+ * ENV:
+ *  - GEMINI_API_KEY (required)
+ *  - GEMINI_IMAGE_MODEL (optional) e.g. "gemini-2.5-flash-image" | "gemini-3-pro-image-preview"
+ *  - IMAGEN_MODEL (optional) e.g. "imagen-4.0-generate-001"
+ *  - BACKEND_URL (optional) default http://localhost:5000
+ *
+ * NOTE:
+ *  - Google APIs return aspect-ratio based images. If you need exact pixel dimensions,
+ *    generate then resize/crop locally (not included here).
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import axios from 'axios';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
@@ -26,89 +33,112 @@ const __dirname = path.dirname(__filename);
 const IMAGES_DIR = path.join(__dirname, '../../images');
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 
-let geminiClient = null;
+let genaiClient = null;
 
-function getGeminiClient() {
-  if (!geminiClient) {
+function getGenAIClient() {
+  if (!genaiClient) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is not set');
-    }
-    geminiClient = new GoogleGenerativeAI(apiKey);
+    if (!apiKey) throw new Error('GEMINI_API_KEY environment variable is not set');
+    genaiClient = new GoogleGenAI({ apiKey });
   }
-  return geminiClient;
+  return genaiClient;
 }
 
 /**
- * Get the Gemini model name from environment variable
- * Defaults to 'gemini-1.5-flash' which is stable and widely supported
- * Note: 'gemini-pro' is deprecated, use 'gemini-1.5-flash' or 'gemini-1.5-pro'
+ * Text model for prompt enhancement (fast/cheap default)
  */
-function getGeminiModel() {
-  // Try different possible model names based on availability
-  // Default to gemini-1.5-flash (faster and cheaper) or gemini-1.5-pro (more capable)
-  const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-  
-  // Map common model names to their correct API identifiers
+function getGeminiTextModel() {
+  const model = (process.env.GEMINI_MODEL || 'gemini-1.5-flash').trim();
   const modelMap = {
-    'gemini-pro': 'gemini-1.5-flash', // Map deprecated gemini-pro to gemini-1.5-flash
+    'gemini-pro': 'gemini-1.5-flash',
     'gemini-1.5-pro': 'gemini-1.5-pro',
     'gemini-1.5-flash': 'gemini-1.5-flash',
     'gemini-1.5-flash-latest': 'gemini-1.5-flash-latest',
     'gemini-2.0-flash': 'gemini-2.0-flash',
     'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp'
   };
-  console.log("------------------------------------------")
-  console.log('model', modelMap[model.toLowerCase()] || model);
-  console.log("------------------------------------------")
-  
-  return modelMap[model.toLowerCase()] || model;
+
+  const resolved = modelMap[model.toLowerCase()] || model;
+
+  console.log('------------------------------------------');
+  console.log('Gemini TEXT model:', resolved);
+  console.log('------------------------------------------');
+
+  return resolved;
+}
+
+/**
+ * Gemini image model (generateContent) - REQUIRED from GEMINI_IMAGE_MODEL env
+ */
+function getGeminiImageModel() {
+  const envModel = (process.env.GEMINI_IMAGE_MODEL || '').trim();
+  if (!envModel) {
+    throw new Error('GEMINI_IMAGE_MODEL environment variable is required for Gemini image generation');
+  }
+  return envModel;
+}
+
+/**
+ * Imagen model (generateImages) - REQUIRED from IMAGEN_MODEL env
+ */
+function getImagenModel() {
+  const envModel = (process.env.IMAGEN_MODEL || '').trim();
+  if (!envModel) {
+    throw new Error('IMAGEN_MODEL environment variable is required for Imagen image generation');
+  }
+  return envModel;
 }
 
 export class GeminiImageService {
   /**
-   * Generate an image using Gemini-enhanced prompts
-   * 
-   * Process:
-   * 1. Uses Gemini to enhance the image description/prompt
-   * 2. Uses Gemini to extract optimal search keywords
-   * 3. Fetches relevant image and saves it locally
-   * 
-   * Future Enhancement: Can integrate Imagen 3 API (Google Cloud Vertex AI) for direct image generation
-   * 
-   * @param {string} prompt - Description of the image to generate
-   * @param {object} options - Additional options (width, height, style)
-   * @returns {Promise<string>} - Local image path (relative to /images)
+   * Generate an image using:
+   *  1) Gemini to enhance the prompt (text model)
+   *  2) Imagen OR Gemini image models to generate the image
+   *  3) Save locally and return `${BACKEND_URL}/images/<file>`
+   *
+   * options:
+   *  - width, height (used to derive aspectRatio)
+   *  - style (used for prompt enhancement)
+   *  - context (used for prompt enhancement)
+   *  - provider: "imagen" | "gemini" (default: "imagen")
+   *  - tenantId
    */
   static async generateImage(prompt, options = {}) {
     const startTime = Date.now();
     const tenantId = options.tenantId || null;
-    
+
     try {
-      // Generate a detailed image description/prompt using Gemini
       const enhancedPrompt = await this.generateImagePrompt(prompt, options);
-      
-      // Use Unsplash API with Gemini-extracted keywords
-      const imageUrl = await this.getImageFromUnsplash(enhancedPrompt, options);
-      
+
+      const provider = 'gemini'; //(options.provider || 'imagen').toLowerCase();
+
+      console.log("------------------------------------------")
+      console.log('provider', provider);
+      console.log("------------------------------------------")
+      let imageUrl;
+      if (provider === 'gemini') {
+        imageUrl = await this.generateImageWithGemini(enhancedPrompt, options);
+      } else {
+        // default = imagen
+        imageUrl = await this.generateImageWithImagen(enhancedPrompt, options);
+      }
+
       const duration = Date.now() - startTime;
-      
-      // Log successful call
+
       await AIAuditService.logSuccess({
         tenantId,
         service: 'gemini',
         operation: 'generateImage',
         requestData: { prompt, enhancedPrompt, options },
-        responseData: { imageUrl },
+        responseData: { imageUrl, provider },
         duration,
-        metadata: { prompt: prompt.substring(0, 100) }
+        metadata: { prompt: prompt.substring(0, 100), provider }
       });
-      
+
       return imageUrl;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
-      // Log failed call
+
       await AIAuditService.logFailure({
         tenantId,
         service: 'gemini',
@@ -118,22 +148,105 @@ export class GeminiImageService {
         duration,
         metadata: { prompt: prompt.substring(0, 100) }
       });
-      
-      console.error('Error generating image with Gemini:', error);
-      // Fallback to Unsplash with original prompt
+
+      console.error('Error generating image with Gemini/Imagen:', error);
+      console.warn('⚠️  Falling back to placeholder image service');
       return this.getImageFromUnsplash(prompt, options);
     }
   }
 
   /**
-   * Generate an enhanced image prompt using Gemini
+   * ✅ Imagen path (recommended for best fidelity)
+   * Uses @google/genai: ai.models.generateImages()
+   * Expects base64 at response.generatedImages[0].image.imageBytes
+   * Uses ONLY the model specified in IMAGEN_MODEL env variable
+   */
+  static async generateImageWithImagen(prompt, options = {}) {
+    const ai = getGenAIClient();
+
+    const width = options.width || 1200;
+    const height = options.height || 630;
+    const aspectRatio = this.toAspectRatio(width, height);
+
+    const model = getImagenModel();
+    console.log(`🎨 Generating image with Imagen model: ${model} (aspectRatio=${aspectRatio})...`);
+
+    const resp = await ai.models.generateImages({
+      model,
+      prompt,
+      config: {
+        numberOfImages: 1,
+        aspectRatio
+        // imageSize: "2K", // optional, depends on model availability
+      }
+    });
+
+    const imageBytes = resp?.generatedImages?.[0]?.image?.imageBytes;
+    if (!imageBytes) {
+      throw new Error('No imageBytes returned from Imagen');
+    }
+
+    const buffer = Buffer.from(imageBytes, 'base64');
+
+    const filename = this.makeImageFilename(prompt, width, height, 'png');
+    await this.ensureImagesDir();
+    await writeFile(path.join(IMAGES_DIR, filename), buffer);
+
+    console.log(`✅ Generated image saved: ${filename}`);
+    return `${BACKEND_URL}/images/${filename}`;
+  }
+
+  /**
+   * ✅ Gemini image path
+   * Uses @google/genai: ai.models.generateContent() with imageConfig
+   * Expects base64 at candidates[0].content.parts[].inlineData.data
+   * Uses ONLY the model specified in GEMINI_IMAGE_MODEL env variable
+   */
+  static async generateImageWithGemini(prompt, options = {}) {
+    const ai = getGenAIClient();
+
+    const width = options.width || 1200;
+    const height = options.height || 630;
+    const aspectRatio = this.toAspectRatio(width, height);
+
+    const model = getGeminiImageModel();
+    console.log(`🎨 Generating image with Gemini model: ${model} (aspectRatio=${aspectRatio})...`);
+
+    const resp = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        imageConfig: { aspectRatio }
+      }
+    });
+
+    const parts = resp?.candidates?.[0]?.content?.parts || [];
+    const imagePart = parts.find((p) => p?.inlineData?.data);
+
+    if (!imagePart?.inlineData?.data) {
+      throw new Error('No inline image data returned from Gemini model');
+    }
+
+    const base64 = imagePart.inlineData.data;
+    const buffer = Buffer.from(base64, 'base64');
+
+    const filename = this.makeImageFilename(prompt, width, height, 'png');
+    await this.ensureImagesDir();
+    await writeFile(path.join(IMAGES_DIR, filename), buffer);
+
+    console.log(`✅ Generated image saved: ${filename}`);
+    return `${BACKEND_URL}/images/${filename}`;
+  }
+
+  /**
+   * Generate an enhanced image prompt using Gemini text model
    */
   static async generateImagePrompt(originalPrompt, options = {}) {
     const style = options.style || 'professional';
     const context = options.context || 'website content';
 
     const prompt = `Generate a detailed, SEO-friendly image description for a ${context} image.
-    
+
 Original request: "${originalPrompt}"
 Style: ${style}
 
@@ -146,49 +259,20 @@ Requirements:
 
 Return only the enhanced image description, nothing else.`;
 
-    const client = getGeminiClient();
-    const modelName = getGeminiModel();
-    
-    // Try the configured model first
+    const ai = getGenAIClient();
+    const modelName = getGeminiTextModel();
+
     try {
-      const model = client.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const enhancedPrompt = response.text().trim();
-      return enhancedPrompt || originalPrompt;
+      const resp = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt
+      });
+
+      // GenAI SDK returns text in candidates/parts
+      const text = this.extractTextFromGenAIResponse(resp);
+      return (text && text.trim()) ? text.trim() : originalPrompt;
     } catch (error) {
-      // If model not found or unavailable, try fallback models
-      if ((error.message && error.message.includes('not found')) || 
-          (error.message && error.message.includes('404')) ||
-          (error.message && error.message.includes('not supported'))) {
-        console.warn(`⚠️  Model "${modelName}" not available (${error.message}), trying fallback models...`);
-        
-        // Try gemini-1.5-flash first (most widely available)
-        const fallbackModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-latest'];
-        
-        for (const fallbackModelName of fallbackModels) {
-          if (fallbackModelName === modelName) continue; // Skip if it's the same as the original
-          
-          try {
-            console.log(`🔄 Trying fallback model: ${fallbackModelName}`);
-            const fallbackModel = client.getGenerativeModel({ model: fallbackModelName });
-            const result = await fallbackModel.generateContent(prompt);
-            const response = await result.response;
-            const enhancedPrompt = response.text().trim();
-            console.log(`✅ Successfully used fallback model: ${fallbackModelName}`);
-            return enhancedPrompt || originalPrompt;
-          } catch (fallbackError) {
-            console.warn(`⚠️  Fallback model ${fallbackModelName} also failed: ${fallbackError.message}`);
-            continue; // Try next fallback
-          }
-        }
-        
-        // All fallbacks failed
-        console.error('❌ All Gemini models failed, using original prompt');
-        return originalPrompt;
-      }
-      // For other errors, return original prompt
-      console.error('❌ Error generating image prompt:', error.message);
+      console.warn(`⚠️  Prompt enhancement failed (${modelName}): ${error.message}`);
       return originalPrompt;
     }
   }
@@ -207,13 +291,12 @@ Return only the enhanced image description, nothing else.`;
    * Download image from URL and save locally
    * @param {string} imageUrl - URL of the image to download
    * @param {string} filename - Optional filename (will generate if not provided)
-   * @returns {Promise<string>} - Local image path (relative to /images)
+   * @returns {Promise<string>} - Local image URL served from backend
    */
   static async downloadAndSaveImage(imageUrl, filename = null) {
     try {
       await this.ensureImagesDir();
 
-      // Generate filename if not provided
       if (!filename) {
         const hash = crypto.createHash('md5').update(imageUrl).digest('hex');
         const ext = path.extname(new URL(imageUrl).pathname) || '.jpg';
@@ -222,14 +305,11 @@ Return only the enhanced image description, nothing else.`;
 
       const filePath = path.join(IMAGES_DIR, filename);
 
-      // Skip if file already exists
       if (existsSync(filePath)) {
         console.log(`📸 Image already exists: ${filename}`);
-        // Return full URL for existing images too
         return `${BACKEND_URL}/images/${filename}`;
       }
 
-      // Download image
       console.log(`⬇️  Downloading image: ${imageUrl}`);
       const response = await axios({
         url: imageUrl,
@@ -241,18 +321,14 @@ Return only the enhanced image description, nothing else.`;
         }
       });
 
-      // Save to disk
       await writeFile(filePath, response.data);
       console.log(`✅ Saved image: ${filename}`);
 
-      // Return full URL so images can be loaded from backend
-      // Use BACKEND_URL from env or default to localhost:5000
       const imageUrlReturn = `${BACKEND_URL}/images/${filename}`;
       console.log(`📸 Image URL: ${imageUrlReturn}`);
       return imageUrlReturn;
     } catch (error) {
       console.error('Error downloading/saving image:', error.message);
-      // Return placeholder as fallback
       const width = 1200;
       const height = 630;
       return `https://via.placeholder.com/${width}x${height}?text=Image+Not+Available`;
@@ -260,32 +336,21 @@ Return only the enhanced image description, nothing else.`;
   }
 
   /**
-   * Get image from Unsplash using generated keywords and save locally
-   * This is a fallback until we integrate actual image generation
+   * Fallback: Get random image and save locally (picsum)
    */
   static async getImageFromUnsplash(prompt, options = {}) {
     try {
-      // Extract keywords from prompt
-      const keywords = this.extractKeywords(prompt);
-      const searchQuery = keywords.slice(0, 3).join(' ');
-      
       const width = options.width || 1200;
       const height = options.height || 630;
-      
-      // Use Unsplash Source API (no key required for basic usage)
-      // Note: source.unsplash.com is deprecated, use picsum.photos as better alternative
-      // For now, we'll use a placeholder service that actually works
+
       const imageUrl = `https://picsum.photos/${width}/${height}?random=${Date.now()}`;
-      
-      // Download and save locally
+
       const hash = crypto.createHash('md5').update(`${prompt}-${width}-${height}`).digest('hex');
       const filename = `${hash}.jpg`;
-      
-      const localPath = await this.downloadAndSaveImage(imageUrl, filename);
-      return localPath;
+
+      return await this.downloadAndSaveImage(imageUrl, filename);
     } catch (error) {
-      console.error('Error getting image from Unsplash:', error);
-      // Ultimate fallback - return placeholder URL
+      console.error('Error getting fallback image:', error);
       const width = options.width || 1200;
       const height = options.height || 630;
       return `https://via.placeholder.com/${width}x${height}?text=${encodeURIComponent(prompt.substring(0, 20))}`;
@@ -293,38 +358,36 @@ Return only the enhanced image description, nothing else.`;
   }
 
   /**
-   * Extract keywords from a prompt for image search
+   * Extract keywords from a prompt for fallback searching
    */
   static extractKeywords(prompt) {
-    // Remove common words and extract meaningful keywords
-    const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'must', 'can'];
-    
+    const stopWords = [
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+      'from', 'as', 'is', 'was', 'are', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+      'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'must', 'can'
+    ];
+
     const words = prompt
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
       .filter(word => word.length > 2 && !stopWords.includes(word));
-    
-    // Remove duplicates and return top keywords
+
     return [...new Set(words)].slice(0, 5);
   }
 
   /**
-   * Extract image prompts from content using AI
-   * Analyzes content to identify where images should be placed and what they should show
-   * @param {string} content - The content to analyze
-   * @param {string} pageTitle - Title of the page for context
-   * @returns {Promise<Array<{prompt: string, context: string}>>} - Array of image prompts with context
+   * Extract image prompts from content using OpenAI (unchanged from your file)
    */
   static async extractImagePromptsFromContent(content, pageTitle, tenantId = null) {
     const startTime = Date.now();
-    
+
     try {
       const OpenAI = (await import('openai')).default;
       const { getOpenAIModel } = await import('../config/openaiConfig.js');
-      
+
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      
+
       const prompt = `Analyze the following content and suggest 2-4 relevant image descriptions that would enhance the content visually.
 
 Page Title: "${pageTitle}"
@@ -357,27 +420,22 @@ Return ONLY the JSON array, no markdown, no explanations.`;
             role: 'system',
             content: 'You are a content strategist that identifies optimal image placement and descriptions for SEO and user engagement. Return only valid JSON arrays.'
           },
-          {
-            role: 'user',
-            content: prompt
-          }
+          { role: 'user', content: prompt }
         ],
         temperature: 0.7,
         max_tokens: 800
       });
 
       const result = response.choices[0].message.content.trim();
-      // Clean JSON (remove markdown code blocks if present)
       const jsonContent = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      
+
       const imagePrompts = JSON.parse(jsonContent);
       const prompts = Array.isArray(imagePrompts) ? imagePrompts : [];
-      
+
       const duration = Date.now() - startTime;
       const tokensUsed = response.usage?.total_tokens || null;
       const estimatedCost = tokensUsed ? (tokensUsed / 1000) * 0.00015 : null;
-      
-      // Log successful call
+
       await AIAuditService.logSuccess({
         tenantId,
         service: 'openai',
@@ -389,12 +447,11 @@ Return ONLY the JSON array, no markdown, no explanations.`;
         estimatedCost,
         metadata: { pageTitle }
       });
-      
+
       return prompts;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
-      // Log failed call
+
       await AIAuditService.logFailure({
         tenantId,
         service: 'openai',
@@ -404,9 +461,9 @@ Return ONLY the JSON array, no markdown, no explanations.`;
         duration,
         metadata: { pageTitle }
       });
-      
+
       console.error('Error extracting image prompts from content:', error);
-      // Fallback: generate basic prompts
+
       return [
         { prompt: `${pageTitle} - professional hero image, modern design`, context: 'hero' },
         { prompt: `${pageTitle} - relevant content image, high quality`, context: 'content' }
@@ -415,21 +472,13 @@ Return ONLY the JSON array, no markdown, no explanations.`;
   }
 
   /**
-   * Generate images for a UX layout
-   * Scans the layout for image fields and generates images for them
-   * Also extracts image prompts from content if provided
-   * @param {object} uxLayout - The UX layout object
-   * @param {string} pageTitle - Title of the page for context
-   * @param {object} tenant - Tenant object for context
-   * @param {string} content - Optional content to extract image prompts from
-   * @returns {Promise<object>} - Updated UX layout with generated image URLs
+   * Generate images for a UX layout (mostly unchanged)
    */
   static async generateLayoutImages(uxLayout, pageTitle, tenant = null, content = null) {
     if (!uxLayout || !uxLayout.sections || !Array.isArray(uxLayout.sections)) {
       return uxLayout;
     }
 
-    // Extract image prompts from content if provided
     let extractedPrompts = [];
     if (content) {
       try {
@@ -441,14 +490,11 @@ Return ONLY the JSON array, no markdown, no explanations.`;
       }
     }
 
-    // Map extracted prompts by context
     const promptsByContext = {};
-    extractedPrompts.forEach((item, index) => {
-      const context = item.context || 'content';
-      if (!promptsByContext[context]) {
-        promptsByContext[context] = [];
-      }
-      promptsByContext[context].push(item.prompt);
+    extractedPrompts.forEach((item) => {
+      const contextKey = item.context || 'content';
+      if (!promptsByContext[contextKey]) promptsByContext[contextKey] = [];
+      promptsByContext[contextKey].push(item.prompt);
     });
 
     let promptIndex = 0;
@@ -457,27 +503,26 @@ Return ONLY the JSON array, no markdown, no explanations.`;
       uxLayout.sections.map(async (section) => {
         const newSection = { ...section };
 
-        // Generate hero image
+        // Hero
         if (section.type === 'hero' && !section.image) {
-          let heroPrompt;
-          if (promptsByContext['hero'] && promptsByContext['hero'].length > 0) {
-            heroPrompt = promptsByContext['hero'][0];
-          } else {
-            heroPrompt = `${pageTitle} - professional hero image, modern design, high quality`;
-          }
+          const heroPrompt =
+            (promptsByContext['hero'] && promptsByContext['hero'][0]) ||
+            `${pageTitle} - professional hero image, modern design, high quality`;
+
           try {
             newSection.image = await this.generateImage(heroPrompt, {
               width: 1920,
               height: 1080,
               style: tenant?.layoutStyle || 'professional',
-              tenantId: tenant?._id?.toString() || null
+              tenantId: tenant?._id?.toString() || null,
+              provider: tenant?.imageProvider || 'gemini' // allow tenant override
             });
           } catch (error) {
             console.error('Error generating hero image:', error);
           }
         }
 
-        // Generate grid item images
+        // Grid items
         if (section.type === 'grid' && section.items && Array.isArray(section.items)) {
           newSection.items = await Promise.all(
             section.items.map(async (item) => {
@@ -488,7 +533,8 @@ Return ONLY the JSON array, no markdown, no explanations.`;
                     width: 800,
                     height: 600,
                     style: tenant?.layoutStyle || 'professional',
-                    tenantId: tenant?._id?.toString() || null
+                    tenantId: tenant?._id?.toString() || null,
+                    provider: tenant?.imageProvider || 'imagen'
                   });
                 } catch (error) {
                   console.error('Error generating grid image:', error);
@@ -499,7 +545,7 @@ Return ONLY the JSON array, no markdown, no explanations.`;
           );
         }
 
-        // Generate imageBlock images
+        // Image block
         if (section.type === 'imageBlock' && !section.image) {
           let imagePrompt;
           if (promptsByContext['content'] && promptsByContext['content'].length > promptIndex) {
@@ -508,16 +554,17 @@ Return ONLY the JSON array, no markdown, no explanations.`;
           } else {
             imagePrompt = `${pageTitle} - relevant image, high quality, professional`;
           }
+
           try {
             newSection.image = await this.generateImage(imagePrompt, {
               width: 1200,
               height: 630,
               style: tenant?.layoutStyle || 'professional',
-              tenantId: tenant?._id?.toString() || null
+              tenantId: tenant?._id?.toString() || null,
+              provider: tenant?.imageProvider || 'imagen'
             });
-            if (!newSection.caption) {
-              newSection.caption = pageTitle;
-            }
+
+            if (!newSection.caption) newSection.caption = pageTitle;
           } catch (error) {
             console.error('Error generating imageBlock image:', error);
           }
@@ -529,5 +576,40 @@ Return ONLY the JSON array, no markdown, no explanations.`;
 
     return { ...uxLayout, sections: updatedSections };
   }
-}
 
+  // -------------------------
+  // Helpers (new)
+  // -------------------------
+
+  static toAspectRatio(w, h) {
+    const r = w / h;
+
+    if (Math.abs(r - 16 / 9) < 0.15) return '16:9';
+    if (Math.abs(r - 9 / 16) < 0.15) return '9:16';
+    if (Math.abs(r - 4 / 3) < 0.15) return '4:3';
+    if (Math.abs(r - 3 / 4) < 0.15) return '3:4';
+    return '1:1';
+  }
+
+  static makeImageFilename(prompt, width, height, ext = 'png') {
+    const hash = crypto
+      .createHash('md5')
+      .update(`${prompt}-${width}-${height}-${Date.now()}`)
+      .digest('hex');
+    return `${hash}.${ext}`;
+  }
+
+  static extractTextFromGenAIResponse(resp) {
+    // Best-effort extraction across possible shapes
+    const parts = resp?.candidates?.[0]?.content?.parts || [];
+    const textPart = parts.find((p) => typeof p?.text === 'string');
+    if (textPart?.text) return textPart.text;
+
+    // Some responses may expose a convenience text() (depends on SDK version)
+    try {
+      if (typeof resp?.text === 'function') return resp.text();
+    } catch (_) {}
+
+    return '';
+  }
+}

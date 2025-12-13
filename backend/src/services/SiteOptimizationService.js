@@ -3,7 +3,7 @@ import PageSearchMetricsWeekly from '../models/PageSearchMetricsWeekly.js';
 import { PageService } from './PageService.js';
 import { TenantService } from './TenantService.js';
 import { MonetizationTemplateService } from './MonetizationTemplateService.js';
-import OpenAI from 'openai';
+import { generateText } from './AIProviderService.js';
 
 export class SiteOptimizationService {
   /**
@@ -115,13 +115,6 @@ export class SiteOptimizationService {
    * Optimize CTR by rewriting title and meta description
    */
   static async optimizeCTR(page, tenantId) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
-    }
-
-    const openai = new OpenAI({ apiKey });
-
     const prompt = `Rewrite the title and meta description for this page to improve click-through rate (CTR) in search results.
 
 Current Title: ${page.title}
@@ -143,24 +136,19 @@ Return JSON:
 }`;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || process.env.GPT_MODEL || 'gpt-4o-mini',
+      const content = await generateText({
         messages: [
-          {
-            role: 'system',
-            content: 'You are an SEO expert specializing in CTR optimization. Return valid JSON only.'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        systemPrompt: 'You are an SEO expert specializing in CTR optimization. Return valid JSON only.',
         temperature: 0.7,
-        max_tokens: 300,
-        response_format: { type: 'json_object' }
+        maxTokens: 300,
+        jsonMode: true
       });
 
-      const content = response.choices[0].message.content.trim();
       const parsed = JSON.parse(content);
 
       return {
@@ -182,13 +170,6 @@ Return JSON:
    * Expand content with FAQ and subsections
    */
   static async expandContent(page, tenantId) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
-    }
-
-    const openai = new OpenAI({ apiKey });
-
     const prompt = `Expand this page content by adding:
 1. An FAQ section with 5-7 questions and answers (with FAQ schema)
 2. 2 new subsections (H2 headings) with detailed content
@@ -206,23 +187,17 @@ Requirements:
 Return the FULL expanded HTML content (including original + additions).`;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || process.env.GPT_MODEL || 'gpt-4o-mini',
+      const expandedContent = await generateText({
         messages: [
-          {
-            role: 'system',
-            content: 'You are an SEO content expert. Expand content while maintaining quality and intent.'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        systemPrompt: 'You are an SEO content expert. Expand content while maintaining quality and intent.',
         temperature: 0.7,
-        max_tokens: 2000
+        maxTokens: 2000
       });
-
-      const expandedContent = response.choices[0].message.content.trim();
 
       return {
         title: page.title,

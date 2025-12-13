@@ -39,7 +39,8 @@ export async function generateMetadata({ params, headers: headersParam }) {
                        page.content?.substring(0, 160) || 
                        'MicroSite Empire AI - Multi-tenant micro-site CMS';
     const keywords = meta.keywords || [];
-    const ogImage = meta.ogImage || null;
+    // Use thumbnail first, fallback to ogImage
+    const ogImage = page.thumbnail?.url || meta.ogImage || null;
 
     // Get domain for canonical URL
     const tenantDomain = headersParam.get('x-tenant-domain') || headersParam.get('host') || 'localhost';

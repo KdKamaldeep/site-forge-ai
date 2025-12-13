@@ -4,7 +4,7 @@
  */
 
 import { TenantService } from './TenantService.js';
-import OpenAI from 'openai';
+import { generateText } from './AIProviderService.js';
 
 export class PillarService {
   /**
@@ -46,6 +46,11 @@ export class PillarService {
     // Select best one (evergreen + practical)
     const selected = this.selectBestPillar(candidates);
 
+    // Validate selected pillar has required fields
+    if (!selected || !selected.categoryKey || !selected.keyword) {
+      throw new Error('Failed to generate valid pillar candidate');
+    }
+
     // Set as active pillar
     const targetSupportingCount = selected.category?.postingRatePerWeek 
       ? Math.max(30, selected.category.postingRatePerWeek * 10) 
@@ -69,12 +74,6 @@ export class PillarService {
    * Generate 3 pillar candidates using AI
    */
   static async generatePillarCandidates(tenant, allowedCategories) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
-    }
-
-    const openai = new OpenAI({ apiKey });
     const brandName = tenant.brandIdentity?.brandName || tenant.name;
     const tone = tenant.brandIdentity?.tone || 'friendly';
     const forbiddenTopics = tenant.compliance?.forbiddenTopics || [];
@@ -109,24 +108,19 @@ Return JSON with format:
 }`;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || process.env.GPT_MODEL || 'gpt-4o-mini',
+      const content = await generateText({
         messages: [
-          {
-            role: 'system',
-            content: 'You are an SEO expert specializing in pillar content strategy. Return valid JSON only.'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        systemPrompt: 'You are an SEO expert specializing in pillar content strategy. Return valid JSON only.',
         temperature: 0.7,
-        max_tokens: 600,
-        response_format: { type: 'json_object' }
+        maxTokens: 600,
+        jsonMode: true
       });
 
-      const content = response.choices[0].message.content.trim();
       let parsed = JSON.parse(content);
 
       if (!parsed.candidates || !Array.isArray(parsed.candidates)) {
@@ -221,20 +215,29 @@ Return JSON with format:
 
     const activePillar = tenant.activePillar;
 
-    // Move to history
-    if (!tenant.pillarHistoryNew) {
-      tenant.pillarHistoryNew = [];
+    // Validate activePillar has required fields before moving to history
+    const hasValidPillar = activePillar.categoryKey && 
+                          activePillar.pillarKeyword && 
+                          activePillar.createdAt;
+
+    // Move to history only if pillar is valid
+    if (hasValidPillar) {
+      if (!tenant.pillarHistoryNew) {
+        tenant.pillarHistoryNew = [];
+      }
+
+      tenant.pillarHistoryNew.push({
+        categoryKey: activePillar.categoryKey,
+        pillarKeyword: activePillar.pillarKeyword,
+        targetSupportingCount: activePillar.targetSupportingCount || 30,
+        createdAt: activePillar.createdAt,
+        completedAt: new Date()
+      });
+
+      console.log(`✅ Completed pillar: "${activePillar.pillarKeyword}" (moved to history)`);
+    } else {
+      console.warn(`⚠️  Active pillar is incomplete (categoryKey: ${activePillar.categoryKey}, pillarKeyword: ${activePillar.pillarKeyword}), skipping history entry`);
     }
-
-    tenant.pillarHistoryNew.push({
-      categoryKey: activePillar.categoryKey,
-      pillarKeyword: activePillar.pillarKeyword,
-      targetSupportingCount: activePillar.targetSupportingCount,
-      createdAt: activePillar.createdAt,
-      completedAt: new Date()
-    });
-
-    console.log(`✅ Completed pillar: "${activePillar.pillarKeyword}" (moved to history)`);
 
     // Select next pillar
     const allowedCategories = tenant.contentPillars || [];
@@ -256,6 +259,11 @@ Return JSON with format:
     // Generate candidates for next category
     const candidates = await this.generatePillarCandidates(tenant, [nextCategory]);
     const selected = this.selectBestPillar(candidates);
+
+    // Validate selected pillar has required fields
+    if (!selected || !selected.categoryKey || !selected.keyword) {
+      throw new Error('Failed to generate valid pillar candidate for next pillar');
+    }
 
     const targetSupportingCount = nextCategory.postingRatePerWeek 
       ? Math.max(30, nextCategory.postingRatePerWeek * 10) 

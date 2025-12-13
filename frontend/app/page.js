@@ -122,6 +122,7 @@ export default async function HomePage() {
         title={page.title}
         schemaMarkup={page.schemaMarkup}
         readingTime={page.readingTime}
+        thumbnail={page.thumbnail}
         wordCount={page.wordCount}
       />
     );

@@ -24,7 +24,7 @@ export class PageService {
     const page = await Page.findOne({ 
       tenantId, 
       slug: slug.toLowerCase().trim() 
-    }).select('_id title slug meta content uxLayout schemaMarkup readingTime wordCount intent monetizationMode categoryKey primaryKeyword updatedAt');
+    }).select('_id title slug meta content uxLayout schemaMarkup readingTime wordCount intent monetizationMode categoryKey primaryKeyword thumbnail updatedAt');
     
     if (!page) {
       return null;
@@ -52,6 +52,7 @@ export class PageService {
       monetizationMode: page.monetizationMode || 'adsense',
       categoryKey: page.categoryKey || null,
       primaryKeyword: page.primaryKeyword || null,
+      thumbnail: page.thumbnail || null,
       updatedAt: page.updatedAt
     };
   }
@@ -63,7 +64,7 @@ export class PageService {
     const page = await Page.findOne({ 
       tenantId, 
       isHome: true 
-    }).select('title slug meta content uxLayout schemaMarkup readingTime wordCount updatedAt');
+    }).select('title slug meta content uxLayout schemaMarkup readingTime wordCount thumbnail updatedAt');
     
     if (!page) {
       return null;
@@ -85,6 +86,7 @@ export class PageService {
       schemaMarkup: page.schemaMarkup || null,
       readingTime: page.readingTime || null,
       wordCount: page.wordCount || null,
+      thumbnail: page.thumbnail || null,
       updatedAt: page.updatedAt
     };
   }
@@ -95,7 +97,7 @@ export class PageService {
    */
   static async listPagesForTenant(tenantId) {
     const pages = await Page.find({ tenantId })
-      .select('_id slug title meta categoryKey readingTime wordCount updatedAt')
+      .select('_id slug title meta categoryKey readingTime wordCount thumbnail updatedAt')
       .sort({ updatedAt: -1 }); // Newest first
     
     return {
@@ -109,6 +111,7 @@ export class PageService {
         categoryKey: page.categoryKey || null,
         readingTime: page.readingTime || null,
         wordCount: page.wordCount || null,
+        thumbnail: page.thumbnail || null,
         updatedAt: page.updatedAt
       }))
     };
