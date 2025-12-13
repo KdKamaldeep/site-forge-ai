@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Audit Logs - MicroSite Empire AI</title>
+    <link rel="stylesheet" href="/admin/styles.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>MicroSite CMS</h2>
+        </div>
+        
+        <div class="sidebar-search">
+            <input type="text" placeholder="🔍 Search..." class="search-input">
+        </div>
+        
+        <div class="sidebar-user">
+            <div class="user-avatar">
+                <span><%= typeof user !== 'undefined' && user.email ? user.email.charAt(0).toUpperCase() : 'A' %></span>
+            </div>
+            <div class="user-info">
+                <div class="user-name"><%= typeof user !== 'undefined' && user.email ? user.email.split('@')[0] : 'Admin' %></div>
+                <div class="user-id">ID: <%= typeof user !== 'undefined' && user._id ? user._id.toString().slice(-6) : '000000' %></div>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">DASHBOARDS</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/dashboard">📊 Dashboard</a></li>
+            </ul>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">MANAGEMENT</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/tenants">🏢 Tenants</a></li>
+                <li><a href="/admin/pages">📄 Pages</a></li>
+                <li><a href="/admin/themes">🎨 Themes</a></li>
+                <li><a href="/admin/navigation">🧭 Navigation</a></li>
+                <li><a href="/admin/audit" class="active">📊 AI Audit</a></li>
+            </ul>
+        </div>
+        
+        <% if (typeof allTenants !== 'undefined' && allTenants && allTenants.length > 0) { %>
+        <div class="sidebar-tenants">
+            <div class="sidebar-tenants-title">TENANTS</div>
+            <% allTenants.slice(0, 5).forEach(tenant => { %>
+                <div class="tenant-item" onclick="window.location.href='/admin/tenants/edit/<%= tenant._id %>'">
+                    <span class="tenant-dot"></span>
+                    <span class="tenant-name"><%= tenant.name %></span>
+                </div>
+            <% }); %>
+            <% if (allTenants.length > 5) { %>
+                <div class="tenant-item" onclick="window.location.href='/admin/tenants'" style="justify-content: center; color: rgba(255, 255, 255, 0.5); font-size: 11px;">
+                    +<%= allTenants.length - 5 %> more
+                </div>
+            <% } %>
+        </div>
+        <% } %>
+    </div>
+
+    <div class="main-content">
+        <div class="top-header">
+            <div class="breadcrumb">
+                <span>Dashboards</span>
+                <span class="separator">></span>
+                <span class="current">AI Audit Logs</span>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" title="Notifications">
+                    <span>🔔</span>
+                    <span class="badge">3</span>
+                </button>
+                <button class="icon-btn" title="Settings">
+                    <span>⚙️</span>
+                </button>
+                <button class="icon-btn" title="Messages">
+                    <span>💬</span>
+                    <span class="badge">1</span>
+                </button>
+                <button class="icon-btn" title="Language">
+                    <span>🌐</span>
+                </button>
+                <form method="POST" action="/admin/logout" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-logout">Logout</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="page-header">
+            <h1>AI Audit Logs</h1>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-card">
+            <form method="GET" action="/admin/audit" class="filters-form">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>Tenant</label>
+                        <select name="tenantId" class="form-control">
+                            <option value="">All Tenants</option>
+                            <% tenants.forEach(tenant => { %>
+                                <option value="<%= tenant._id %>" <%= filters.tenantId === tenant._id.toString() ? 'selected' : '' %>>
+                                    <%= tenant.name %> (<%= tenant.domain %>)
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Service</label>
+                        <select name="service" class="form-control">
+                            <option value="">All Services</option>
+                            <option value="openai" <%= filters.service === 'openai' ? 'selected' : '' %>>OpenAI</option>
+                            <option value="gemini" <%= filters.service === 'gemini' ? 'selected' : '' %>>Gemini</option>
+                            <option value="unsplash" <%= filters.service === 'unsplash' ? 'selected' : '' %>>Unsplash</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Status</label>
+                        <select name="status" class="form-control">
+                            <option value="">All Status</option>
+                            <option value="success" <%= filters.status === 'success' ? 'selected' : '' %>>Success</option>
+                            <option value="failed" <%= filters.status === 'failed' ? 'selected' : '' %>>Failed</option>
+                            <option value="partial" <%= filters.status === 'partial' ? 'selected' : '' %>>Partial</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Operation</label>
+                        <input type="text" name="operation" class="form-control" placeholder="e.g., generateContentWithEAT" value="<%= filters.operation %>">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <button type="submit" class="btn btn-primary">Filter</button>
+                        <a href="/admin/audit" class="btn btn-secondary">Clear</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Calls</div>
+                <div class="stat-value"><%= stats.overall.totalCalls %></div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-label">Success</div>
+                <div class="stat-value"><%= stats.overall.successCalls %></div>
+                <div class="stat-percent"><%= stats.overall.totalCalls > 0 ? ((stats.overall.successCalls / stats.overall.totalCalls) * 100).toFixed(1) : 0 %>%</div>
+            </div>
+            <div class="stat-card error">
+                <div class="stat-label">Failed</div>
+                <div class="stat-value"><%= stats.overall.failedCalls %></div>
+                <div class="stat-percent"><%= stats.overall.totalCalls > 0 ? ((stats.overall.failedCalls / stats.overall.totalCalls) * 100).toFixed(1) : 0 %>%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Tokens</div>
+                <div class="stat-value"><%= stats.overall.totalTokens.toLocaleString() %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Cost</div>
+                <div class="stat-value">$<%= stats.overall.totalCost.toFixed(2) %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg Duration</div>
+                <div class="stat-value"><%= stats.overall.avgDuration ? (stats.overall.avgDuration / 1000).toFixed(2) + 's' : '0s' %></div>
+            </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <h3>AI Call Logs</h3>
+                <div class="table-info">
+                    Showing <%= logs.length %> of <%= pagination.total %> logs
+                </div>
+            </div>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Service</th>
+                        <th>Operation</th>
+                        <th>Status</th>
+                        <th>Tenant</th>
+                        <th>Duration</th>
+                        <th>Tokens</th>
+                        <th>Cost</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (logs.length === 0) { %>
+                        <tr>
+                            <td colspan="9" class="text-center">No logs found</td>
+                        </tr>
+                    <% } else { %>
+                        <% logs.forEach(log => { %>
+                            <tr class="<%= log.status === 'failed' ? 'row-error' : log.status === 'success' ? 'row-success' : '' %>">
+                                <td><%= new Date(log.createdAt).toLocaleString() %></td>
+                                <td><span class="badge badge-<%= log.service %>"><%= log.service %></span></td>
+                                <td><code><%= log.operation %></code></td>
+                                <td>
+                                    <span class="status-badge status-<%= log.status %>">
+                                        <%= log.status %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (log.tenantId && log.tenantId.name) { %>
+                                        <%= log.tenantId.name %>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td><%= log.duration ? (log.duration / 1000).toFixed(2) + 's' : '-' %></td>
+                                <td><%= log.tokensUsed ? log.tokensUsed.toLocaleString() : '-' %></td>
+                                <td><%= log.estimatedCost ? '$' + log.estimatedCost.toFixed(4) : '-' %></td>
+                                <td>
+                                    <% if (log.error) { %>
+                                        <details class="error-details">
+                                            <summary class="error-summary"><%= log.error.length > 50 ? log.error.substring(0, 50) + '...' : log.error %></summary>
+                                            <div class="error-full">
+                                                <strong>Error:</strong> <%= log.error %><br>
+                                                <% if (log.errorStack) { %>
+                                                    <strong>Stack:</strong><br>
+                                                    <pre><%= log.errorStack %></pre>
+                                                <% } %>
+                                            </div>
+                                        </details>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } %>
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <% if (pagination.totalPages > 1) { %>
+                <div class="pagination">
+                    <% if (pagination.page > 1) { %>
+                        <a href="?page=<%= pagination.page - 1 %>&tenantId=<%= filters.tenantId %>&service=<%= filters.service %>&status=<%= filters.status %>&operation=<%= filters.operation %>" class="btn btn-sm">Previous</a>
+                    <% } %>
+                    <span>Page <%= pagination.page %> of <%= pagination.totalPages %></span>
+                    <% if (pagination.page < pagination.totalPages) { %>
+                        <a href="?page=<%= pagination.page + 1 %>&tenantId=<%= filters.tenantId %>&service=<%= filters.service %>&status=<%= filters.status %>&operation=<%= filters.operation %>" class="btn btn-sm">Next</a>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+    
+    <footer class="admin-footer">
+        <div>
+            <span>© 2024 MicroSite Empire AI. All rights reserved.</span>
+        </div>
+        <div class="footer-links">
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/api-docs" target="_blank">API Docs</a>
+            <a href="#" onclick="alert('Version 1.0.0'); return false;">Version</a>
+        </div>
+    </footer>
+
+    <style>
+    .filters-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .filters-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .filter-group label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #666;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .stat-card.success {
+        border-left: 4px solid #28a745;
+    }
+
+    .stat-card.error {
+        border-left: 4px solid #dc3545;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: #666;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #333;
+    }
+
+    .stat-percent {
+        font-size: 0.875rem;
+        color: #666;
+        margin-top: 0.25rem;
+    }
+
+    .table-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .table-info {
+        color: #666;
+        font-size: 0.875rem;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table th {
+        background: #f8f9fa;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #666;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .data-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        font-size: 0.875rem;
+    }
+
+    .data-table tr:hover {
+        background: #f8f9fa;
+    }
+
+    .row-error {
+        background: #fff5f5;
+    }
+
+    .row-success {
+        background: #f0fff4;
+    }
+
+    .badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-openai {
+        background: #10a37f;
+        color: white;
+    }
+
+    .badge-gemini {
+        background: #4285f4;
+        color: white;
+    }
+
+    .badge-unsplash {
+        background: #000;
+        color: white;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-partial {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .error-details {
+        font-size: 0.75rem;
+    }
+
+    .error-summary {
+        cursor: pointer;
+        color: #dc3545;
+        text-decoration: underline;
+    }
+
+    .error-full {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        font-size: 0.75rem;
+    }
+
+    .error-full pre {
+        margin: 0.5rem 0 0 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .text-muted {
+        color: #999;
+    }
+
+    .pagination {
+        padding: 1.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        border-top: 1px solid #eee;
+    }
+
+    code {
+        background: #f8f9fa;
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-family: 'Courier New', monospace;
+    }
+    </style>
+</body>
+</html>

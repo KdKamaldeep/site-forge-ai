@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title : 'Admin CMS' %> - MicroSite Empire AI</title>
+    <link rel="stylesheet" href="/admin/styles.css">
+    <script src="/admin/js/admin.js" defer></script>
+    <% if (typeof activePage !== 'undefined' && activePage === 'pages') { %>
+    <script src="/admin/js/ux-layout-helper.js" defer></script>
+    <% } %>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>MicroSite CMS</h2>
+        </div>
+        
+        <div class="sidebar-search">
+            <input type="text" placeholder="🔍 Search..." class="search-input">
+        </div>
+        
+        <div class="sidebar-user">
+            <div class="user-avatar">
+                <span><%= typeof user !== 'undefined' && user.email ? user.email.charAt(0).toUpperCase() : 'A' %></span>
+            </div>
+            <div class="user-info">
+                <div class="user-name"><%= typeof user !== 'undefined' && user.email ? user.email.split('@')[0] : 'Admin' %></div>
+                <div class="user-id">ID: <%= typeof user !== 'undefined' && user._id ? user._id.toString().slice(-6) : '000000' %></div>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">DASHBOARDS</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/dashboard" class="<%= typeof activePage !== 'undefined' && activePage === 'dashboard' ? 'active' : '' %>">📊 Dashboard</a></li>
+            </ul>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">MANAGEMENT</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/tenants" class="<%= typeof activePage !== 'undefined' && activePage === 'tenants' ? 'active' : '' %>">🏢 Tenants</a></li>
+                <li><a href="/admin/pages" class="<%= typeof activePage !== 'undefined' && activePage === 'pages' ? 'active' : '' %>">📄 Pages</a></li>
+                <li><a href="/admin/themes" class="<%= typeof activePage !== 'undefined' && activePage === 'themes' ? 'active' : '' %>">🎨 Themes</a></li>
+                <li><a href="/admin/navigation" class="<%= typeof activePage !== 'undefined' && activePage === 'navigation' ? 'active' : '' %>">🧭 Navigation</a></li>
+                <li><a href="/admin/audit" class="<%= typeof activePage !== 'undefined' && activePage === 'audit' ? 'active' : '' %>">📊 AI Audit</a></li>
+            </ul>
+        </div>
+        
+        <% if (typeof tenants !== 'undefined' && tenants && tenants.length > 0) { %>
+        <div class="sidebar-tenants">
+            <div class="sidebar-tenants-title">TENANTS</div>
+            <% tenants.slice(0, 5).forEach(tenant => { %>
+                <div class="tenant-item" onclick="window.location.href='/admin/tenants/edit/<%= tenant._id %>'">
+                    <span class="tenant-dot"></span>
+                    <span class="tenant-name"><%= tenant.name %></span>
+                </div>
+            <% }); %>
+            <% if (tenants.length > 5) { %>
+                <div class="tenant-item" onclick="window.location.href='/admin/tenants'" style="justify-content: center; color: rgba(255, 255, 255, 0.5); font-size: 11px;">
+                    +<%= tenants.length - 5 %> more
+                </div>
+            <% } %>
+        </div>
+        <% } %>
+    </div>
+
+    <div class="main-content">
+        <div class="top-header">
+            <div class="breadcrumb">
+                <span>Dashboards</span>
+                <span class="separator">></span>
+                <span class="current"><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Dashboard' %></span>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" title="Notifications">
+                    <span>🔔</span>
+                    <span class="badge">3</span>
+                </button>
+                <button class="icon-btn" title="Settings">
+                    <span>⚙️</span>
+                </button>
+                <button class="icon-btn" title="Messages">
+                    <span>💬</span>
+                    <span class="badge">1</span>
+                </button>
+                <button class="icon-btn" title="Language">
+                    <span>🌐</span>
+                </button>
+                <form method="POST" action="/admin/logout" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-logout">Logout</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="page-header">
+            <h1><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Admin Panel' %></h1>
+        </div>
+
+        <% if (typeof success !== 'undefined' && success) { %>
+            <div class="alert alert-success">
+                <span>✓</span> <%= success %>
+            </div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-error">
+                <span>✕</span> <%= error %>
+            </div>
+        <% } %>
+
+        <%- typeof body !== 'undefined' ? body : '' %>
+    </div>
+    
+    <footer class="admin-footer">
+        <div>
+            <span>© 2024 MicroSite Empire AI. All rights reserved.</span>
+        </div>
+        <div class="footer-links">
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/api-docs" target="_blank">API Docs</a>
+            <a href="#" onclick="alert('Version 1.0.0'); return false;">Version</a>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,132 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+.vercel
+.turbo
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+.cache/
+
+# Compressed archives
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.tar
+*.gz
+app.zip
+setup-env.zip
+*.rar
+
+# Backend specific
+backend/node_modules/
+backend/logs/
+backend/images/*.jpg
+backend/images/*.png
+backend/images/*.jpeg
+backend/images/*.gif
+backend/images/*.webp
+backend/.env
+backend/.env.local
+
+# Frontend specific (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.vercel
+frontend/.turbo
+frontend/.env
+frontend/.env.local
+
+# OpenAI agent specific
+openai/node_modules/
+openai/.env
+openai/.env.local
+
+# Sensitive files
+*.key
+*.pem
+*.p12
+*.pfx
+*key.txt
+open ai key.txt
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads and media (keep structure, ignore files)
+uploads/*
+!uploads/.gitkeep
+backend/images/*
+!backend/images/.gitkeep
+
+# Local configuration
+config/local.json
+config/local.js
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional: Keep package-lock.json for consistency (comment out if you want to ignore it)
+# Uncomment below to ignore package-lock.json
+# package-lock.json
+

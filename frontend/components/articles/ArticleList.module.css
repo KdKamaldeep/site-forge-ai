@@ -1,0 +1,12 @@
+.articleList {
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 4rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
+

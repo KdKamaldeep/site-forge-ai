@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= page ? 'Edit Page' : 'Create Page' %> - MicroSite Empire AI</title>
+    <link rel="stylesheet" href="/admin/styles.css">
+    <script src="/admin/js/admin.js" defer></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>MicroSite CMS</h2>
+        </div>
+        
+        <div class="sidebar-search">
+            <input type="text" placeholder="🔍 Search..." class="search-input">
+        </div>
+        
+        <div class="sidebar-user">
+            <div class="user-avatar">
+                <span>A</span>
+            </div>
+            <div class="user-info">
+                <div class="user-name">Admin</div>
+                <div class="user-id">ID: 000000</div>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">DASHBOARDS</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/dashboard">📊 Dashboard</a></li>
+            </ul>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">MANAGEMENT</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/tenants">🏢 Tenants</a></li>
+                <li><a href="/admin/pages" class="active">📄 Pages</a></li>
+                <li><a href="/admin/themes">🎨 Themes</a></li>
+                <li><a href="/admin/navigation">🧭 Navigation</a></li>
+            </ul>
+        </div>
+        
+        <% if (typeof allTenants !== 'undefined' && allTenants && allTenants.length > 0) { %>
+        <div class="sidebar-tenants">
+            <div class="sidebar-tenants-title">TENANTS</div>
+            <% allTenants.slice(0, 5).forEach(tenant => { %>
+                <div class="tenant-item" onclick="window.location.href='/admin/tenants/edit/<%= tenant._id %>'">
+                    <span class="tenant-dot"></span>
+                    <span class="tenant-name"><%= tenant.name %></span>
+                </div>
+            <% }); %>
+            <% if (allTenants.length > 5) { %>
+                <div class="tenant-item" onclick="window.location.href='/admin/tenants'" style="justify-content: center; color: rgba(255, 255, 255, 0.5); font-size: 11px;">
+                    +<%= allTenants.length - 5 %> more
+                </div>
+            <% } %>
+        </div>
+        <% } %>
+    </div>
+
+    <div class="main-content">
+        <div class="top-header">
+            <div class="breadcrumb">
+                <span>Dashboards</span>
+                <span class="separator">></span>
+                <span class="current"><%= page ? 'Edit Page' : 'Create Page' %></span>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" title="Notifications">
+                    <span>🔔</span>
+                    <span class="badge">3</span>
+                </button>
+                <button class="icon-btn" title="Settings">
+                    <span>⚙️</span>
+                </button>
+                <form method="POST" action="/admin/logout" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-logout">Logout</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="page-header">
+            <h1><%= page ? 'Edit Page' : 'Create Page' %></h1>
+        </div>
+
+        <div class="form-container">
+            <form method="POST" action="<%= page ? '/admin/pages/update/' + page._id : '/admin/pages' %>" id="pageForm">
+                <div class="form-group">
+                    <label>Tenant *</label>
+                    <select name="tenantId" required>
+                        <option value="">Select Tenant</option>
+                        <% tenants.forEach(t => { %>
+                            <option value="<%= t._id %>" <%= page && page.tenantId && page.tenantId.toString() === t._id.toString() ? 'selected' : '' %>>
+                                <%= t.name %> (<%= t.domain %>)
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Title *</label>
+                        <input type="text" name="title" value="<%= page ? page.title : '' %>" required placeholder="Page title">
+                    </div>
+                    <div class="form-group">
+                        <label>Slug *</label>
+                        <input type="text" name="slug" value="<%= page ? page.slug : '' %>" required placeholder="page-slug">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="isHome" value="true" <%= page && page.isHome ? 'checked' : '' %> style="width: auto;">
+                        Set as Homepage
+                    </label>
+                    <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Only one page per tenant can be the homepage</small>
+                </div>
+                <div class="form-group">
+                    <label>Content (HTML) *</label>
+                    <textarea name="content" rows="10" required placeholder="Enter page content in HTML format"><%= page ? page.content : '' %></textarea>
+                    <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">This is used as fallback if UX Layout is not provided</small>
+                </div>
+                <div class="form-group">
+                    <label>UX Layout (JSON) *</label>
+                    <textarea name="uxLayout" id="uxLayoutTextarea" rows="15" required placeholder='{"sections": [{"type": "hero", "title": "Welcome", "subtitle": "Subtitle"}]}'><%= page && page.uxLayout ? JSON.stringify(page.uxLayout, null, 2) : '{\n  "sections": []\n}' %></textarea>
+                    <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">
+                        Enter valid JSON. Available section types: <strong>hero</strong>, <strong>paragraph</strong>, <strong>grid</strong>, <strong>infoBox</strong>, <strong>cta</strong>, <strong>imageBlock</strong>, <strong>featureList</strong>, <strong>comparisonTable</strong>
+                    </small>
+                    <details style="margin-top: 8px;">
+                        <summary style="cursor: pointer; color: var(--primary); font-size: 12px; font-weight: 600;">📋 View Example JSON</summary>
+                        <pre style="background: #f3f4f6; padding: 12px; border-radius: 6px; margin-top: 8px; font-size: 11px; overflow-x: auto;"><code>{
+  "sections": [
+    {
+      "type": "hero",
+      "title": "Welcome to Our Site",
+      "subtitle": "Your amazing subtitle here",
+      "image": "https://example.com/hero.jpg",
+      "cta": {
+        "label": "Get Started",
+        "url": "/signup"
+      }
+    },
+    {
+      "type": "paragraph",
+      "text": "Your paragraph content here"
+    },
+    {
+      "type": "grid",
+      "columns": 3,
+      "items": [
+        {
+          "title": "Feature 1",
+          "text": "Description 1",
+          "image": "https://example.com/img1.jpg"
+        }
+      ]
+    }
+  ]
+}</code></pre>
+                    </details>
+                </div>
+                <fieldset style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <legend style="font-weight: 600; padding: 0 8px;">SEO & Metadata</legend>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Meta Title</label>
+                            <input type="text" name="metaTitle" value="<%= page && page.meta ? page.meta.title : '' %>" placeholder="SEO title">
+                            <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Optimal: 50-60 characters</small>
+                        </div>
+                        <div class="form-group">
+                            <label>OG Image URL</label>
+                            <input type="url" name="ogImage" value="<%= page && page.meta && page.meta.ogImage ? page.meta.ogImage : '' %>" placeholder="https://example.com/image.jpg">
+                            <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Recommended: 1200x630px</small>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Keywords (comma-separated)</label>
+                            <input type="text" name="metaKeywords" value="<%= page && page.meta && page.meta.keywords ? page.meta.keywords.join(', ') : '' %>" placeholder="keyword1, keyword2">
+                        </div>
+                        <div class="form-group">
+                            <label>Meta Description</label>
+                            <textarea name="metaDescription" rows="3" placeholder="SEO description (120-160 characters)"><%= page && page.meta ? page.meta.description : '' %></textarea>
+                            <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Optimal: 120-160 characters</small>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <legend style="font-weight: 600; padding: 0 8px;">E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness)</legend>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Author Name</label>
+                            <input type="text" name="authorName" value="<%= page && page.meta && page.meta.author ? page.meta.author.name : '' %>" placeholder="Author name">
+                        </div>
+                        <div class="form-group">
+                            <label>Author Expertise (comma-separated)</label>
+                            <input type="text" name="authorExpertise" value="<%= page && page.meta && page.meta.author && page.meta.author.expertise ? page.meta.author.expertise.join(', ') : '' %>" placeholder="SEO, Content Writing, Marketing">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Author Bio</label>
+                        <textarea name="authorBio" rows="3" placeholder="Brief author biography"><%= page && page.meta && page.meta.author ? page.meta.author.bio : '' %></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Citations (one per line)</label>
+                        <textarea name="citations" rows="4" placeholder="https://source1.com&#10;https://source2.com"><%= page && page.meta && page.meta.citations ? page.meta.citations.join('\n') : '' %></textarea>
+                        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">URLs to sources/citations (one per line)</small>
+                    </div>
+                </fieldset>
+
+                <fieldset style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <legend style="font-weight: 600; padding: 0 8px;">AdSense Configuration</legend>
+                    <div class="form-group">
+                        <label>Ad Zones</label>
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" name="adZones" value="above-content" <%= page && page.adZones && page.adZones.includes('above-content') ? 'checked' : 'checked' %> style="width: auto;">
+                                Above Content
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" name="adZones" value="mid-content" <%= page && page.adZones && page.adZones.includes('mid-content') ? 'checked' : 'checked' %> style="width: auto;">
+                                Mid Content
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" name="adZones" value="below-content" <%= page && page.adZones && page.adZones.includes('below-content') ? 'checked' : 'checked' %> style="width: auto;">
+                                Below Content
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" name="adZones" value="sidebar" <%= page && page.adZones && page.adZones.includes('sidebar') ? 'checked' : '' %> style="width: auto;">
+                                Sidebar
+                            </label>
+                        </div>
+                        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Select where ads should be placed on this page</small>
+                    </div>
+                </fieldset>
+
+                <% if (page) { %>
+                <fieldset style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; background: #f9fafb;">
+                    <legend style="font-weight: 600; padding: 0 8px;">Page Metrics (Read-only)</legend>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                        <div>
+                            <label style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 4px;">Word Count</label>
+                            <div style="font-size: 18px; font-weight: 600;"><%= page.wordCount || 0 %></div>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 4px;">Reading Time</label>
+                            <div style="font-size: 18px; font-weight: 600;"><%= page.readingTime || 0 %> min</div>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 4px;">Quality Score</label>
+                            <div style="font-size: 18px; font-weight: 600; color: <%= page.qualityScore && page.qualityScore >= 80 ? '#10b981' : page.qualityScore && page.qualityScore >= 60 ? '#f59e0b' : '#ef4444' %>">
+                                <%= page.qualityScore ? page.qualityScore + '/100' : 'N/A' %>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 4px;">Last Reviewed</label>
+                            <div style="font-size: 14px;"><%= page.meta && page.meta.lastReviewed ? new Date(page.meta.lastReviewed).toLocaleDateString() : 'Never' %></div>
+                        </div>
+                    </div>
+                    <% if (page.schemaMarkup) { %>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                        <label style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 8px;">Schema Markup</label>
+                        <details>
+                            <summary style="cursor: pointer; color: var(--primary); font-size: 12px; font-weight: 600;">📋 View Schema Markup (JSON-LD)</summary>
+                            <pre style="background: #f3f4f6; padding: 12px; border-radius: 6px; margin-top: 8px; font-size: 11px; overflow-x: auto; max-height: 300px; overflow-y: auto;"><code><%= JSON.stringify(page.schemaMarkup, null, 2) %></code></pre>
+                        </details>
+                    </div>
+                    <% } %>
+                </fieldset>
+                <% } %>
+                <div class="form-actions">
+                    <a href="/admin/pages" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Page</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <footer class="admin-footer">
+        <div>
+            <span>© 2024 MicroSite Empire AI. All rights reserved.</span>
+        </div>
+        <div class="footer-links">
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/api-docs" target="_blank">API Docs</a>
+            <a href="#" onclick="alert('Version 1.0.0'); return false;">Version</a>
+        </div>
+    </footer>
+</body>
+</html>

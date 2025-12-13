@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Pages - Admin CMS</title>
+    <link rel="stylesheet" href="/admin/styles.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>MicroSite CMS</h2>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="/admin/dashboard">Dashboard</a></li>
+            <li><a href="/admin/tenants">Tenants</a></li>
+            <li><a href="/admin/pages" class="active">Pages</a></li>
+            <li><a href="/admin/themes">Themes</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Manage Pages</h1>
+            <div>
+                <button class="btn-primary" onclick="showCreateModal()">+ New Page</button>
+                <button class="btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table" id="pagesTable">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Slug</th>
+                        <th>Tenant</th>
+                        <th>Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" class="loading">Loading pages...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="pageModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create Page</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="pageForm">
+                <input type="hidden" id="pageId">
+                <div class="form-group">
+                    <label>Tenant</label>
+                    <select id="pageTenantId" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="pageTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Slug</label>
+                    <input type="text" id="pageSlug" required>
+                </div>
+                <div class="form-group">
+                    <label>Content</label>
+                    <textarea id="pageContent" rows="10" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Meta Title</label>
+                    <input type="text" id="metaTitle">
+                </div>
+                <div class="form-group">
+                    <label>Meta Description</label>
+                    <textarea id="metaDescription" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Keywords (comma-separated)</label>
+                    <input type="text" id="metaKeywords">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/admin/common.js"></script>
+    <script>
+        const API_BASE = '/admin/api';
+        let pages = [];
+        let tenants = [];
+
+        async function loadTenants() {
+            const data = await fetchWithAuth(`${API_BASE}/tenants`);
+            if (data) {
+                tenants = data.tenants;
+                const select = document.getElementById('pageTenantId');
+                select.innerHTML = '<option value="">Select Tenant</option>' +
+                    tenants.map(t => `<option value="${t._id}">${t.name} (${t.domain})</option>`).join('');
+            }
+        }
+
+        async function loadPages() {
+            try {
+                const data = await fetchWithAuth(`${API_BASE}/pages`);
+                if (!data) return;
+                pages = data.pages;
+
+                const tbody = document.querySelector('#pagesTable tbody');
+                if (pages.length > 0) {
+                    tbody.innerHTML = pages.map(page => {
+                        const tenant = tenants.find(t => t._id === page.tenantId) || { name: 'Unknown' };
+                        return `
+                            <tr>
+                                <td>${page.title}</td>
+                                <td>${page.slug}</td>
+                                <td>${tenant.name}</td>
+                                <td>${new Date(page.updatedAt).toLocaleDateString()}</td>
+                                <td>
+                                    <button class="btn-sm btn-edit" onclick="editPage('${page._id}')">Edit</button>
+                                    <button class="btn-sm btn-delete" onclick="deletePage('${page._id}')">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5">No pages found</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading pages:', error);
+            }
+        }
+
+        function showCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Create Page';
+            document.getElementById('pageForm').reset();
+            document.getElementById('pageId').value = '';
+            document.getElementById('pageModal').style.display = 'block';
+        }
+
+        async function editPage(id) {
+            const page = pages.find(p => p._id === id);
+            if (!page) return;
+
+            const fullPage = await fetchWithAuth(`${API_BASE}/pages/${id}`);
+            if (!fullPage) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Page';
+            document.getElementById('pageId').value = fullPage._id;
+            document.getElementById('pageTenantId').value = fullPage.tenantId;
+            document.getElementById('pageTitle').value = fullPage.title;
+            document.getElementById('pageSlug').value = fullPage.slug;
+            document.getElementById('pageContent').value = fullPage.content;
+            document.getElementById('metaTitle').value = fullPage.meta?.title || '';
+            document.getElementById('metaDescription').value = fullPage.meta?.description || '';
+            document.getElementById('metaKeywords').value = fullPage.meta?.keywords?.join(', ') || '';
+            document.getElementById('pageModal').style.display = 'block';
+        }
+
+        async function deletePage(id) {
+            if (!confirm('Are you sure you want to delete this page?')) return;
+
+            try {
+                const response = await fetchWithAuth(`${API_BASE}/pages/${id}`, {
+                    method: 'DELETE'
+                });
+                if (response) {
+                    loadPages();
+                }
+            } catch (error) {
+                alert('Error deleting page');
+            }
+        }
+
+        document.getElementById('pageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('pageId').value;
+            const pageData = {
+                tenantId: document.getElementById('pageTenantId').value,
+                title: document.getElementById('pageTitle').value,
+                slug: document.getElementById('pageSlug').value,
+                content: document.getElementById('pageContent').value,
+                meta: {
+                    title: document.getElementById('metaTitle').value,
+                    description: document.getElementById('metaDescription').value,
+                    keywords: document.getElementById('metaKeywords').value.split(',').map(k => k.trim()).filter(k => k)
+                }
+            };
+
+            try {
+                const url = id ? `${API_BASE}/pages/${id}` : `${API_BASE}/pages`;
+                const method = id ? 'PUT' : 'POST';
+                
+                const response = await fetchWithAuth(url, {
+                    method,
+                    body: JSON.stringify(pageData)
+                });
+
+                if (response) {
+                    closeModal();
+                    loadPages();
+                }
+            } catch (error) {
+                alert('Error saving page');
+            }
+        });
+
+        function closeModal() {
+            document.getElementById('pageModal').style.display = 'none';
+        }
+
+        loadTenants().then(() => loadPages());
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,9 @@
+ Agent registered successfully!
+   Agent ID: asst_8NeFsBt7G3SrndOKMENdu73i
+   Saved to: D:\in-house-ideas\SiteForge.ai\openai\agent-id.txt
+
+📋 Next steps:
+   Run: node openai/run-agent.js <domain>
+   Example: node openai/run-agent.js travel.ai
+
+✅ Registration complete. Agent ID: asst_8NeFsBt7G3SrndOKMENdu73i

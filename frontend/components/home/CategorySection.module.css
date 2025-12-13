@@ -1,0 +1,97 @@
+.categorySection {
+  margin-bottom: 3rem;
+}
+
+.categoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.categoryTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1f2937;
+}
+
+.categoryLink {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s;
+}
+
+.categoryLink:hover {
+  color: #2563eb;
+}
+
+.viewAllLink {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.viewAllLink:hover {
+  color: #1f2937;
+}
+
+.articlesList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.articleItem {
+  width: 100%;
+}
+
+.articleLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.articleTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1f2937;
+  margin: 0 0 0.5rem;
+  transition: color 0.2s;
+  text-transform: capitalize;
+}
+
+.articleLink:hover .articleTitle {
+  color: #2563eb;
+}
+
+/* Varied hover colors for category section articles */
+.articleItem:nth-child(1) .articleLink:hover .articleTitle {
+  color: #2563eb; /* Blue */
+}
+
+.articleItem:nth-child(2) .articleLink:hover .articleTitle {
+  color: #7c3aed; /* Purple */
+}
+
+.articleItem:nth-child(3) .articleLink:hover .articleTitle {
+  color: #059669; /* Green */
+}
+
+@media (max-width: 640px) {
+  .categorySection {
+    margin-bottom: 2rem;
+  }
+
+  .articleTitle {
+    font-size: 1rem;
+  }
+}
+

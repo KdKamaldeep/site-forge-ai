@@ -1,0 +1,17 @@
+.metaLine {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.metaLine time {
+  color: #6b7280;
+}
+
+.separator {
+  color: #d1d5db;
+}
+

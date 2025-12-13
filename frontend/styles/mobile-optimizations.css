@@ -1,0 +1,162 @@
+/**
+ * Mobile-First Responsive Design Optimizations
+ * Core Web Vitals and performance optimizations
+ */
+
+/* Mobile-first base styles */
+* {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Lazy loading images */
+img[loading="lazy"] {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+img[loading="lazy"].loaded {
+  opacity: 1;
+}
+
+/* Responsive typography */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1200px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* Container max-widths for readability */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0 2rem;
+  }
+}
+
+/* Performance optimizations */
+.page-renderer {
+  contain: layout style paint;
+  will-change: auto;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Touch-friendly interactive elements */
+button,
+a,
+input,
+select,
+textarea {
+  min-height: 44px; /* iOS touch target minimum */
+  min-width: 44px;
+}
+
+/* Mobile navigation optimizations */
+@media (max-width: 768px) {
+  nav ul {
+    flex-direction: column;
+  }
+  
+  nav li {
+    width: 100%;
+  }
+}
+
+/* Image optimization */
+.hero-image,
+.grid-item-image {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Responsive grid */
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .grid-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Content spacing for mobile */
+.content-section {
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .content-section {
+    padding: 2rem;
+  }
+}
+
+/* Font loading optimization */
+@font-face {
+  font-display: swap; /* Show fallback font immediately */
+}
+
+/* Critical CSS - above the fold content */
+.hero-section {
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Prevent layout shift */
+.aspect-ratio-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+}
+
+.aspect-ratio-container img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+

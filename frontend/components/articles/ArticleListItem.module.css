@@ -1,0 +1,67 @@
+.articleItem {
+  padding: 2rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.articleItem:last-child {
+  border-bottom: none;
+}
+
+.articleLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.articleTitle {
+  font-size: 1.625rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1f2937;
+  margin: 0.75rem 0 1rem;
+  transition: color 0.2s;
+  text-transform: capitalize;
+}
+
+.articleLink:hover .articleTitle {
+  color: #2563eb;
+}
+
+/* Varied hover colors for article list items */
+.articleItem:nth-child(3n+1) .articleLink:hover .articleTitle {
+  color: #2563eb; /* Blue */
+}
+
+.articleItem:nth-child(3n+2) .articleLink:hover .articleTitle {
+  color: #7c3aed; /* Purple */
+}
+
+.articleItem:nth-child(3n) .articleLink:hover .articleTitle {
+  color: #059669; /* Green */
+}
+
+.articleExcerpt {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #4b5563;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .articleItem {
+    padding: 1.5rem 0;
+  }
+
+  .articleTitle {
+    font-size: 1.375rem;
+  }
+
+  .articleExcerpt {
+    font-size: 0.9375rem;
+  }
+}
+

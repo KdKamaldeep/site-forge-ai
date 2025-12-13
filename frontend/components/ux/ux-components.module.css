@@ -1,0 +1,263 @@
+/* UX Components Styles */
+
+.hero {
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  text-align: center;
+}
+
+.heroContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.heroImage {
+  margin-bottom: 2rem;
+}
+
+.heroImage img {
+  max-width: 600px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.heroTitle {
+  font-family: var(--heading-font);
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  opacity: 0.9;
+}
+
+.paragraph {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+
+.paragraph p,
+.paragraph div {
+  font-size: var(--font-size);
+  line-height: 1.8;
+  color: var(--text);
+}
+
+.paragraph :global(a.internal-link) {
+  color: var(--primary);
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.gridSection {
+  padding: 3rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.gridContainer {
+  display: grid;
+  gap: 2rem;
+}
+
+.gridItem {
+  background: var(--background);
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.gridItem:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.gridItemImage {
+  margin-bottom: 1rem;
+}
+
+.gridItemImage img {
+  width: 100%;
+  border-radius: 4px;
+}
+
+.gridItemTitle {
+  font-family: var(--heading-font);
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.gridItemText {
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.infoBox {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border-radius: 4px;
+}
+
+.infoBoxTitle {
+  font-family: var(--heading-font);
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.infoBoxIcon {
+  font-size: 1.5rem;
+}
+
+.infoBoxText {
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.ctaSection {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.ctaButton {
+  display: inline-block;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.ctaPrimary {
+  background: var(--primary);
+  color: white;
+}
+
+.ctaPrimary:hover {
+  background: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+}
+
+.ctaSecondary {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+.ctaSecondary:hover {
+  background: var(--primary);
+  color: white;
+  text-decoration: none;
+}
+
+.imageBlock {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+
+.imageBlockImg {
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.imageCaption {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-style: italic;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.featureList {
+  max-width: 900px;
+  margin: 3rem auto;
+  padding: 0 2rem;
+}
+
+.featureListItems {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.featureItem {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.featureItem:last-child {
+  border-bottom: none;
+}
+
+.featureTitle {
+  font-family: var(--heading-font);
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.featureDescription {
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.comparisonTableContainer {
+  max-width: 1000px;
+  margin: 3rem auto;
+  padding: 0 2rem;
+  overflow-x: auto;
+}
+
+.comparisonTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--background);
+}
+
+.comparisonTable th {
+  background: var(--primary);
+  color: white;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.comparisonTable td {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.comparisonTable tr:hover {
+  background: #f5f5f5;
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2rem;
+  }
+  .heroSubtitle {
+    font-size: 1rem;
+  }
+  .gridContainer {
+    grid-template-columns: 1fr !important;
+  }
+  .comparisonTableContainer {
+    padding: 0 1rem;
+  }
+}
+

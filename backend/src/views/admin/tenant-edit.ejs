@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= tenant ? 'Edit Tenant' : 'Create Tenant' %> - MicroSite Empire AI</title>
+    <link rel="stylesheet" href="/admin/styles.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>MicroSite CMS</h2>
+        </div>
+        
+        <div class="sidebar-search">
+            <input type="text" placeholder="🔍 Search..." class="search-input">
+        </div>
+        
+        <div class="sidebar-user">
+            <div class="user-avatar">
+                <span>A</span>
+            </div>
+            <div class="user-info">
+                <div class="user-name">Admin</div>
+                <div class="user-id">ID: 000000</div>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">DASHBOARDS</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/dashboard">📊 Dashboard</a></li>
+            </ul>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">MANAGEMENT</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/tenants" class="active">🏢 Tenants</a></li>
+                <li><a href="/admin/pages">📄 Pages</a></li>
+                <li><a href="/admin/themes">🎨 Themes</a></li>
+                <li><a href="/admin/navigation">🧭 Navigation</a></li>
+            </ul>
+        </div>
+        
+        <% if (typeof themes !== 'undefined' && themes) { %>
+        <% if (typeof allTenants !== 'undefined' && allTenants && allTenants.length > 0) { %>
+        <div class="sidebar-tenants">
+            <div class="sidebar-tenants-title">CURRENT TENANT</div>
+            <div class="tenant-item active">
+                <span class="tenant-dot"></span>
+                <span class="tenant-name"><%= tenant ? tenant.name : 'New Tenant' %></span>
+            </div>
+        </div>
+        <% } %>
+        <% } %>
+    </div>
+
+    <div class="main-content">
+        <div class="top-header">
+            <div class="breadcrumb">
+                <span>Dashboards</span>
+                <span class="separator">></span>
+                <span class="current"><%= tenant ? 'Edit Tenant' : 'Create Tenant' %></span>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" title="Notifications">
+                    <span>🔔</span>
+                    <span class="badge">3</span>
+                </button>
+                <button class="icon-btn" title="Settings">
+                    <span>⚙️</span>
+                </button>
+                <form method="POST" action="/admin/logout" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-logout">Logout</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="page-header">
+            <h1><%= tenant ? 'Edit Tenant' : 'Create Tenant' %></h1>
+        </div>
+
+        <div class="form-container">
+            <form method="POST" action="<%= tenant ? '/admin/tenants/update/' + tenant._id : '/admin/tenants' %>" id="tenantForm">
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" name="name" value="<%= tenant ? tenant.name : '' %>" required placeholder="Enter tenant name">
+                </div>
+                <div class="form-group">
+                    <label>Domain *</label>
+                    <input type="text" name="domain" value="<%= tenant ? tenant.domain : '' %>" required placeholder="example.com">
+                </div>
+                <div class="form-group">
+                    <label>Logo URL</label>
+                    <input type="url" name="logo" value="<%= tenant ? (tenant.logo || '') : '' %>" placeholder="https://example.com/logo.png">
+                    <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Logo URL for header/navigation</small>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Theme</label>
+                        <select name="themeId">
+                            <option value="">No Theme</option>
+                            <% themes.forEach(theme => { %>
+                                <option value="<%= theme._id %>" <%= tenant && tenant.themeId && tenant.themeId.toString() === theme._id.toString() ? 'selected' : '' %>>
+                                    <%= theme.name %>
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Layout Style *</label>
+                        <select name="layoutStyle" required>
+                            <option value="">Auto-assign (default)</option>
+                            <option value="modernMinimal" <%= tenant && tenant.layoutStyle === 'modernMinimal' ? 'selected' : '' %>>Modern Minimal</option>
+                            <option value="boldVibrant" <%= tenant && tenant.layoutStyle === 'boldVibrant' ? 'selected' : '' %>>Bold & Vibrant</option>
+                            <option value="professionalCorporate" <%= tenant && tenant.layoutStyle === 'professionalCorporate' ? 'selected' : '' %>>Professional Corporate</option>
+                            <option value="magazineStyle" <%= tenant && tenant.layoutStyle === 'magazineStyle' ? 'selected' : '' %>>Magazine Style</option>
+                            <option value="techModern" <%= tenant && tenant.layoutStyle === 'techModern' ? 'selected' : '' %>>Tech Modern</option>
+                            <option value="creativeArtistic" <%= tenant && tenant.layoutStyle === 'creativeArtistic' ? 'selected' : '' %>>Creative Artistic</option>
+                            <option value="ecommerceFocused" <%= tenant && tenant.layoutStyle === 'ecommerceFocused' ? 'selected' : '' %>>E-commerce Focused</option>
+                            <option value="educational" <%= tenant && tenant.layoutStyle === 'educational' ? 'selected' : '' %>>Educational</option>
+                            <option value="newsBlog" <%= tenant && tenant.layoutStyle === 'newsBlog' ? 'selected' : '' %>>News/Blog</option>
+                            <option value="portfolioShowcase" <%= tenant && tenant.layoutStyle === 'portfolioShowcase' ? 'selected' : '' %>>Portfolio Showcase</option>
+                        </select>
+                        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Choose one of 10 unique layout styles for this tenant</small>
+                    </div>
+                </div>
+                <fieldset style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <legend style="font-weight: 600; padding: 0 8px;">Theme Colors</legend>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px;">
+                        <div class="form-group">
+                            <label>Primary</label>
+                            <input type="color" name="primaryColor" value="<%= tenant && tenant.theme && tenant.theme.colors ? tenant.theme.colors.primary : '#007bff' %>">
+                        </div>
+                        <div class="form-group">
+                            <label>Secondary</label>
+                            <input type="color" name="secondaryColor" value="<%= tenant && tenant.theme && tenant.theme.colors ? tenant.theme.colors.secondary : '#6c757d' %>">
+                        </div>
+                        <div class="form-group">
+                            <label>Text</label>
+                            <input type="color" name="textColor" value="<%= tenant && tenant.theme && tenant.theme.colors ? tenant.theme.colors.text : '#212529' %>">
+                        </div>
+                        <div class="form-group">
+                            <label>Background</label>
+                            <input type="color" name="bgColor" value="<%= tenant && tenant.theme && tenant.theme.colors ? tenant.theme.colors.background : '#ffffff' %>">
+                        </div>
+                        <div class="form-group">
+                            <label>Accent</label>
+                            <input type="color" name="accentColor" value="<%= tenant && tenant.theme && tenant.theme.colors ? tenant.theme.colors.accent : '#28a745' %>">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Brand Identity -->
+                <fieldset style="border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; margin: 20px 0; background: #f0f9ff;">
+                    <legend style="font-weight: 700; padding: 0 8px; color: #1e40af;">1. Brand Identity *</legend>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Brand Name *</label>
+                            <input type="text" name="brandName" value="<%= tenant && tenant.brandIdentity ? (tenant.brandIdentity.brandName || '') : '' %>" required placeholder="e.g., ThinkPractical">
+                        </div>
+                        <div class="form-group">
+                            <label>Tagline *</label>
+                            <input type="text" name="tagline" value="<%= tenant && tenant.brandIdentity ? (tenant.brandIdentity.tagline || '') : '' %>" required placeholder="One line tagline">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+                        <div class="form-group">
+                            <label>Language *</label>
+                            <select name="language" required>
+                                <option value="en" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.language === 'en' ? 'selected' : 'selected' %>>English</option>
+                                <option value="hi" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.language === 'hi' ? 'selected' : '' %>>Hindi</option>
+                                <option value="pa" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.language === 'pa' ? 'selected' : '' %>>Punjabi</option>
+                                <option value="es" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.language === 'es' ? 'selected' : '' %>>Spanish</option>
+                                <option value="fr" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.language === 'fr' ? 'selected' : '' %>>French</option>
+                                <option value="other" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.language === 'other' ? 'selected' : '' %>>Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Country/Region *</label>
+                            <input type="text" name="country" value="<%= tenant && tenant.brandIdentity ? (tenant.brandIdentity.country || 'Global') : 'Global' %>" required placeholder="India / Global">
+                        </div>
+                        <div class="form-group">
+                            <label>Region</label>
+                            <input type="text" name="region" value="<%= tenant && tenant.brandIdentity ? (tenant.brandIdentity.region || '') : '' %>" placeholder="Optional region">
+                        </div>
+                        <div class="form-group">
+                            <label>Tone *</label>
+                            <select name="tone" required>
+                                <option value="practical" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.tone === 'practical' ? 'selected' : '' %>>Practical</option>
+                                <option value="friendly" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.tone === 'friendly' ? 'selected' : 'selected' %>>Friendly</option>
+                                <option value="expert" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.tone === 'expert' ? 'selected' : '' %>>Expert</option>
+                                <option value="professional" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.tone === 'professional' ? 'selected' : '' %>>Professional</option>
+                                <option value="casual" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.tone === 'casual' ? 'selected' : '' %>>Casual</option>
+                                <option value="authoritative" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.tone === 'authoritative' ? 'selected' : '' %>>Authoritative</option>
+                                <option value="conversational" <%= tenant && tenant.brandIdentity && tenant.brandIdentity.tone === 'conversational' ? 'selected' : '' %>>Conversational</option>
+                            </select>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Navigation -->
+                <fieldset style="border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0; background: #f0fdf4;">
+                    <legend style="font-weight: 700; padding: 0 8px; color: #047857;">2. Navigation Structure *</legend>
+                    <p style="color: #6b7280; font-size: 14px; margin-bottom: 15px;">Define your site navigation menu. Each item will appear in the header.</p>
+                    <div id="navigationItems">
+                        <% 
+                        const navItems = tenant && tenant.navigation && tenant.navigation.length > 0 
+                            ? tenant.navigation 
+                            : [{ label: '', path: '', categoryKey: '', icon: '', order: 0 }];
+                        navItems.forEach((item, index) => { %>
+                            <div class="nav-item-row" style="display: grid; grid-template-columns: 2fr 2fr 2fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 15px; padding: 15px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+                                <div class="form-group" style="margin: 0;">
+                                    <label style="font-size: 12px;">Label *</label>
+                                    <input type="text" name="navLabel[]" value="<%= item.label || '' %>" required placeholder="Everyday Life">
+                                </div>
+                                <div class="form-group" style="margin: 0;">
+                                    <label style="font-size: 12px;">Path *</label>
+                                    <input type="text" name="navPath[]" value="<%= item.path || '' %>" required placeholder="/everyday-life">
+                                </div>
+                                <div class="form-group" style="margin: 0;">
+                                    <label style="font-size: 12px;">Category Key *</label>
+                                    <input type="text" name="navCategoryKey[]" value="<%= item.categoryKey || '' %>" required placeholder="everyday-life">
+                                </div>
+                                <div class="form-group" style="margin: 0;">
+                                    <label style="font-size: 12px;">Icon (optional)</label>
+                                    <input type="text" name="navIcon[]" value="<%= item.icon || '' %>" placeholder="🏠">
+                                </div>
+                                <div style="display: flex; gap: 5px;">
+                                    <button type="button" class="btn btn-sm" onclick="moveNavItem(this, -1)" <%= index === 0 ? 'disabled' : '' %>>↑</button>
+                                    <button type="button" class="btn btn-sm" onclick="moveNavItem(this, 1)" <%= index === navItems.length - 1 ? 'disabled' : '' %>>↓</button>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeNavItem(this)" <%= navItems.length === 1 ? 'disabled' : '' %>>×</button>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="addNavItem()" style="margin-top: 10px;">+ Add Navigation Item</button>
+                </fieldset>
+
+                <!-- Content Pillars -->
+                <fieldset style="border: 2px solid #8b5cf6; border-radius: 8px; padding: 20px; margin: 20px 0; background: #faf5ff;">
+                    <legend style="font-weight: 700; padding: 0 8px; color: #6b21a8;">3. Content Pillars / Categories *</legend>
+                    <p style="color: #6b7280; font-size: 14px; margin-bottom: 15px;">Define content categories with seed keywords. Each category will generate its own pillar content.</p>
+                    <div id="contentPillars">
+                        <% 
+                        const pillars = tenant && tenant.contentPillars && tenant.contentPillars.length > 0 
+                            ? tenant.contentPillars 
+                            : [{ categoryKey: '', description: '', seedKeywords: [], monetizationMode: 'adsense', postingRatePerWeek: 2 }];
+                        pillars.forEach((pillar, index) => { %>
+                            <div class="pillar-row" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: white;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                    <div class="form-group" style="margin: 0;">
+                                        <label>Category Key * (slug)</label>
+                                        <input type="text" name="pillarCategoryKey[]" value="<%= pillar.categoryKey || '' %>" required placeholder="everyday-life">
+                                    </div>
+                                    <div class="form-group" style="margin: 0;">
+                                        <label>Monetization Mode *</label>
+                                        <select name="pillarMonetizationMode[]" required>
+                                            <option value="adsense" <%= pillar.monetizationMode === 'adsense' ? 'selected' : 'selected' %>>AdSense</option>
+                                            <option value="affiliate" <%= pillar.monetizationMode === 'affiliate' ? 'selected' : '' %>>Affiliate</option>
+                                            <option value="lead" <%= pillar.monetizationMode === 'lead' ? 'selected' : '' %>>Lead Generation</option>
+                                            <option value="mixed" <%= pillar.monetizationMode === 'mixed' ? 'selected' : '' %>>Mixed</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label>Description *</label>
+                                    <textarea name="pillarDescription[]" required rows="2" placeholder="Brief description of this content category"><%= pillar.description || '' %></textarea>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label>Seed Keywords * (comma-separated, 10-30 keywords)</label>
+                                    <textarea name="pillarSeedKeywords[]" required rows="3" placeholder="keyword1, keyword2, keyword3, ..."><%= pillar.seedKeywords ? pillar.seedKeywords.join(', ') : '' %></textarea>
+                                    <small style="color: #6b7280; font-size: 12px;">Enter 10-30 keywords separated by commas</small>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: end;">
+                                    <div class="form-group" style="margin: 0;">
+                                        <label>Posts Per Week *</label>
+                                        <input type="number" name="pillarPostingRate[]" value="<%= pillar.postingRatePerWeek || 2 %>" required min="0" max="10" style="width: 100px;">
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removePillar(this)" <%= pillars.length === 1 ? 'disabled' : '' %>>Remove Category</button>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="addPillar()" style="margin-top: 10px;">+ Add Content Category</button>
+                </fieldset>
+
+                <!-- Monetization Configuration -->
+                <fieldset style="border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0; background: #fffbeb;">
+                    <legend style="font-weight: 700; padding: 0 8px; color: #92400e;">4. Monetization Configuration *</legend>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Primary Monetization *</label>
+                            <select name="monetizationPrimary" required>
+                                <option value="adsense" <%= tenant && tenant.monetization && tenant.monetization.primary === 'adsense' ? 'selected' : 'selected' %>>AdSense</option>
+                                <option value="affiliate" <%= tenant && tenant.monetization && tenant.monetization.primary === 'affiliate' ? 'selected' : '' %>>Affiliate</option>
+                                <option value="lead" <%= tenant && tenant.monetization && tenant.monetization.primary === 'lead' ? 'selected' : '' %>>Lead Generation</option>
+                                <option value="mixed" <%= tenant && tenant.monetization && tenant.monetization.primary === 'mixed' ? 'selected' : '' %>>Mixed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>CTA Style (for lead pages)</label>
+                            <select name="ctaStyle">
+                                <option value="form" <%= tenant && tenant.monetization && tenant.monetization.ctaStyle === 'form' ? 'selected' : 'selected' %>>Form</option>
+                                <option value="whatsapp" <%= tenant && tenant.monetization && tenant.monetization.ctaStyle === 'whatsapp' ? 'selected' : '' %>>WhatsApp</option>
+                                <option value="both" <%= tenant && tenant.monetization && tenant.monetization.ctaStyle === 'both' ? 'selected' : '' %>>Both</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Affiliate Providers (comma-separated, optional)</label>
+                        <input type="text" name="affiliateProviders" value="<%= tenant && tenant.monetization && tenant.monetization.affiliateProviders ? tenant.monetization.affiliateProviders.join(', ') : '' %>" placeholder="amazon, impact, cj">
+                        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">List affiliate networks you use (e.g., amazon, impact, cj)</small>
+                    </div>
+                </fieldset>
+
+                <!-- Compliance & Safety Rules -->
+                <fieldset style="border: 2px solid #ef4444; border-radius: 8px; padding: 20px; margin: 20px 0; background: #fef2f2;">
+                    <legend style="font-weight: 700; padding: 0 8px; color: #991b1b;">5. Compliance & Safety Rules *</legend>
+                    <div class="form-group">
+                        <label>Forbidden Topics (comma-separated)</label>
+                        <textarea name="forbiddenTopics" rows="3" placeholder="gambling, adult content, illegal activities, ..."><%= tenant && tenant.compliance && tenant.compliance.forbiddenTopics ? tenant.compliance.forbiddenTopics.join(', ') : '' %></textarea>
+                        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Topics to never write about (important for AdSense compliance)</small>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="medicalDisclaimer" value="true" <%= tenant && tenant.compliance && tenant.compliance.medicalDisclaimer !== false ? 'checked' : 'checked' %> style="width: auto;">
+                            <span>Add Medical Disclaimer (if needed)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="legalDisclaimer" value="true" <%= tenant && tenant.compliance && tenant.compliance.legalDisclaimer !== false ? 'checked' : 'checked' %> style="width: auto;">
+                            <span>Add Legal Disclaimer (if needed)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="noFakePricing" value="true" <%= tenant && tenant.compliance && tenant.compliance.noFakePricing !== false ? 'checked' : 'checked' %> style="width: auto;">
+                            <span>No Fake Pricing (enforced)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="noGuaranteedResults" value="true" <%= tenant && tenant.compliance && tenant.compliance.noGuaranteedResults !== false ? 'checked' : 'checked' %> style="width: auto;">
+                            <span>No "Guaranteed Results" Language</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="adSenseCompliant" value="true" <%= tenant && tenant.compliance && tenant.compliance.adSenseCompliant !== false ? 'checked' : 'checked' %> style="width: auto;">
+                            <span>AdSense Compliant (enforced)</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <!-- Publishing Strategy -->
+                <fieldset style="border: 2px solid #6366f1; border-radius: 8px; padding: 20px; margin: 20px 0; background: #eef2ff;">
+                    <legend style="font-weight: 700; padding: 0 8px; color: #4338ca;">6. Publishing Strategy *</legend>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                        <div class="form-group">
+                            <label>Pages Per Week *</label>
+                            <input type="number" name="pagesPerWeek" value="<%= tenant && tenant.publishingStrategy ? (tenant.publishingStrategy.pagesPerWeek || 2) : 2 %>" required min="1" max="10">
+                            <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Target: 2-4 pages/week ideal</small>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 5px;">
+                                <input type="checkbox" name="randomizePublishTime" value="true" <%= tenant && tenant.publishingStrategy && tenant.publishingStrategy.randomizePublishTime !== false ? 'checked' : 'checked' %> style="width: auto;">
+                                <span>Randomize Publish Time</span>
+                            </label>
+                            <small style="color: #6b7280; font-size: 12px;">Spread publishing throughout the week</small>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 5px;">
+                                <input type="checkbox" name="autoPublish" value="true" <%= tenant && tenant.publishingStrategy && tenant.publishingStrategy.autoPublish === true ? 'checked' : '' %> style="width: auto;">
+                                <span>Auto-Publish Pages</span>
+                            </label>
+                            <small style="color: #6b7280; font-size: 12px;">If unchecked, pages saved as draft</small>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <legend style="font-weight: 600; padding: 0 8px;">Analytics & SEO</legend>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Google Analytics ID</label>
+                            <input type="text" name="googleAnalyticsId" value="<%= tenant ? (tenant.googleAnalyticsId || '') : '' %>" placeholder="G-XXXXXXXXXX">
+                            <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Google Analytics 4 Measurement ID</small>
+                        </div>
+                        <div class="form-group">
+                            <label>AdSense ID</label>
+                            <input type="text" name="adsenseId" value="<%= tenant ? (tenant.adsenseId || '') : '' %>" placeholder="ca-pub-XXXXXXXXXX">
+                            <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Google AdSense Publisher ID</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="googleSearchConsoleVerified" value="true" <%= tenant && tenant.googleSearchConsoleVerified ? 'checked' : '' %> style="width: auto;">
+                            Google Search Console Verified
+                        </label>
+                        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">Mark as verified if Search Console is set up</small>
+                    </div>
+                </fieldset>
+                <div class="form-actions">
+                    <a href="/admin/tenants" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Tenant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <footer class="admin-footer">
+        <div>
+            <span>© 2024 MicroSite Empire AI. All rights reserved.</span>
+        </div>
+        <div class="footer-links">
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/api-docs" target="_blank">API Docs</a>
+            <a href="#" onclick="alert('Version 1.0.0'); return false;">Version</a>
+        </div>
+    </footer>
+
+    <script>
+        // Navigation management
+        function addNavItem() {
+            const container = document.getElementById('navigationItems');
+            const newItem = document.createElement('div');
+            newItem.className = 'nav-item-row';
+            newItem.style.cssText = 'display: grid; grid-template-columns: 2fr 2fr 2fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 15px; padding: 15px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;';
+            newItem.innerHTML = `
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 12px;">Label *</label>
+                    <input type="text" name="navLabel[]" required placeholder="Everyday Life">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 12px;">Path *</label>
+                    <input type="text" name="navPath[]" required placeholder="/everyday-life">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 12px;">Category Key *</label>
+                    <input type="text" name="navCategoryKey[]" required placeholder="everyday-life">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 12px;">Icon (optional)</label>
+                    <input type="text" name="navIcon[]" placeholder="🏠">
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <button type="button" class="btn btn-sm" onclick="moveNavItem(this, -1)">↑</button>
+                    <button type="button" class="btn btn-sm" onclick="moveNavItem(this, 1)">↓</button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeNavItem(this)">×</button>
+                </div>
+            `;
+            container.appendChild(newItem);
+        }
+
+        function removeNavItem(btn) {
+            const container = document.getElementById('navigationItems');
+            if (container.children.length > 1) {
+                btn.closest('.nav-item-row').remove();
+            }
+        }
+
+        function moveNavItem(btn, direction) {
+            const row = btn.closest('.nav-item-row');
+            const container = document.getElementById('navigationItems');
+            const index = Array.from(container.children).indexOf(row);
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < container.children.length) {
+                container.insertBefore(row, container.children[newIndex]);
+            }
+        }
+
+        // Content Pillar management
+        function addPillar() {
+            const container = document.getElementById('contentPillars');
+            const newPillar = document.createElement('div');
+            newPillar.className = 'pillar-row';
+            newPillar.style.cssText = 'border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: white;';
+            newPillar.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label>Category Key * (slug)</label>
+                        <input type="text" name="pillarCategoryKey[]" required placeholder="everyday-life">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label>Monetization Mode *</label>
+                        <select name="pillarMonetizationMode[]" required>
+                            <option value="adsense" selected>AdSense</option>
+                            <option value="affiliate">Affiliate</option>
+                            <option value="lead">Lead Generation</option>
+                            <option value="mixed">Mixed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Description *</label>
+                    <textarea name="pillarDescription[]" required rows="2" placeholder="Brief description of this content category"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Seed Keywords * (comma-separated, 10-30 keywords)</label>
+                    <textarea name="pillarSeedKeywords[]" required rows="3" placeholder="keyword1, keyword2, keyword3, ..."></textarea>
+                    <small style="color: #6b7280; font-size: 12px;">Enter 10-30 keywords separated by commas</small>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: end;">
+                    <div class="form-group" style="margin: 0;">
+                        <label>Posts Per Week *</label>
+                        <input type="number" name="pillarPostingRate[]" value="2" required min="0" max="10" style="width: 100px;">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removePillar(this)">Remove Category</button>
+                </div>
+            `;
+            container.appendChild(newPillar);
+        }
+
+        function removePillar(btn) {
+            const container = document.getElementById('contentPillars');
+            if (container.children.length > 1) {
+                btn.closest('.pillar-row').remove();
+            }
+        }
+    </script>
+</body>
+</html>

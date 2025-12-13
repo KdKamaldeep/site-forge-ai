@@ -1,0 +1,9 @@
+.categoryBadge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted, #475569);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+

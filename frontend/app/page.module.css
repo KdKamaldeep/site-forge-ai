@@ -1,0 +1,13 @@
+.homePage {
+  min-height: 100vh;
+  background: #fff;
+}
+
+.paginationWrapper {
+  padding: 0;
+}
+
+/* Ensure consistent spacing between sections */
+.homePage > * + * {
+  border-top: none;
+}

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - MicroSite Empire AI</title>
+    <link rel="stylesheet" href="/admin/styles.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>MicroSite CMS</h2>
+        </div>
+        
+        <div class="sidebar-search">
+            <input type="text" placeholder="🔍 Search..." class="search-input">
+        </div>
+        
+        <div class="sidebar-user">
+            <div class="user-avatar">
+                <span>A</span>
+            </div>
+            <div class="user-info">
+                <div class="user-name">Admin</div>
+                <div class="user-id">ID: 000000</div>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">DASHBOARDS</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/dashboard" class="active">📊 Dashboard</a></li>
+            </ul>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">MANAGEMENT</div>
+            <ul class="sidebar-nav">
+                <li><a href="/admin/tenants">🏢 Tenants</a></li>
+                <li><a href="/admin/pages">📄 Pages</a></li>
+                <li><a href="/admin/themes">🎨 Themes</a></li>
+            </ul>
+        </div>
+        
+        <% if (typeof tenants !== 'undefined' && tenants && tenants.length > 0) { %>
+        <div class="sidebar-tenants">
+            <div class="sidebar-tenants-title">TENANTS</div>
+            <% tenants.slice(0, 5).forEach(tenant => { %>
+                <div class="tenant-item" onclick="window.location.href='/admin/tenants/edit/<%= tenant._id %>'">
+                    <span class="tenant-dot"></span>
+                    <span class="tenant-name"><%= tenant.name %></span>
+                </div>
+            <% }); %>
+            <% if (tenants.length > 5) { %>
+                <div class="tenant-item" onclick="window.location.href='/admin/tenants'" style="justify-content: center; color: rgba(255, 255, 255, 0.5); font-size: 11px;">
+                    +<%= tenants.length - 5 %> more
+                </div>
+            <% } %>
+        </div>
+        <% } %>
+    </div>
+
+    <div class="main-content">
+        <div class="top-header">
+            <div class="breadcrumb">
+                <span>Dashboards</span>
+                <span class="separator">></span>
+                <span class="current">Analytics</span>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" title="Notifications">
+                    <span>🔔</span>
+                    <span class="badge">3</span>
+                </button>
+                <button class="icon-btn" title="Settings">
+                    <span>⚙️</span>
+                </button>
+                <button class="icon-btn" title="Messages">
+                    <span>💬</span>
+                    <span class="badge">1</span>
+                </button>
+                <button class="icon-btn" title="Language">
+                    <span>🌐</span>
+                </button>
+                <form method="POST" action="/admin/logout" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-logout">Logout</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="page-header">
+            <h1>Dashboard</h1>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Tenants</h3>
+                <div class="value"><%= stats.tenants.total %></div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Pages</h3>
+                <div class="value"><%= stats.pages.total %></div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Themes</h3>
+                <div class="value"><%= stats.themes.total %></div>
+            </div>
+            <div class="stat-card">
+                <h3>Admin Users</h3>
+                <div class="value"><%= stats.admins.total %></div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h2>Recent Tenants</h2>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Domain</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (stats.tenants.recent.length > 0) { %>
+                        <% stats.tenants.recent.forEach(tenant => { %>
+                            <tr>
+                                <td><%= tenant.name %></td>
+                                <td><%= tenant.domain %></td>
+                                <td><%= new Date(tenant.createdAt).toLocaleDateString() %></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="/admin/tenants/edit/<%= tenant._id %>" class="btn btn-sm btn-edit" title="Edit Tenant">
+                                            <span style="font-size: 14px;">✏️</span> Edit
+                                        </a>
+                                        <a href="https://<%= tenant.domain %>" target="_blank" class="btn btn-sm" style="background: var(--info); color: white;" title="View Site">
+                                            <span style="font-size: 14px;">👁️</span> View
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr><td colspan="4" class="empty-state">No tenants yet</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <footer class="admin-footer">
+        <div>
+            <span>© 2024 MicroSite Empire AI. All rights reserved.</span>
+        </div>
+        <div class="footer-links">
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/api-docs" target="_blank">API Docs</a>
+            <a href="#" onclick="alert('Version 1.0.0'); return false;">Version</a>
+        </div>
+    </footer>
+</body>
+</html>

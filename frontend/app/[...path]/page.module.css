@@ -1,0 +1,106 @@
+.categoryPage {
+  min-height: 100vh;
+  background: #fff;
+  padding: 2rem 0 4rem;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.breadcrumbs {
+  margin-bottom: 2rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.breadcrumbLink {
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.breadcrumbLink:hover {
+  color: #1f2937;
+}
+
+.breadcrumbSeparator {
+  margin: 0 0.5rem;
+  color: #d1d5db;
+}
+
+.breadcrumbCurrent {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4rem;
+}
+
+.mainContent {
+  min-width: 0; /* Prevent grid overflow */
+}
+
+.categoryHeader {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.categoryTitle {
+  font-size: clamp(2rem, 4vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1f2937;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+/* Desktop: 12-column grid (8 cols main, 4 cols sidebar) */
+@media (min-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 8fr 4fr;
+    gap: 4rem;
+    align-items: start;
+  }
+
+  .mainContent {
+    max-width: none;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .contentGrid {
+    gap: 3rem;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 767px) {
+  .categoryPage {
+    padding: 1.5rem 0 3rem;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+
+  .breadcrumbs {
+    margin-bottom: 1.5rem;
+  }
+
+  .categoryHeader {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .contentGrid {
+    gap: 3rem;
+  }
+}
