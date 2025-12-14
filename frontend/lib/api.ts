@@ -85,6 +85,8 @@ export interface Page {
   primaryKeyword?: string;
   updatedAt?: string;
   publishedAt?: string;
+  isStandalone?: boolean;
+  standalonePageType?: 'privacy-policy' | 'about-us' | 'contact' | 'cookie-disclosure' | null;
 }
 
 export interface KeywordCluster {
@@ -264,6 +266,18 @@ export async function listPages(tenantId: string): Promise<Page[] | null> {
   });
   
   // Backend returns { pages: [...] }, so extract the array
+  return result?.pages || null;
+}
+
+/**
+ * Get standalone pages for tenant (Privacy Policy, About Us, Contact, Cookie Disclosure)
+ * Backend returns: { pages: [{ _id, slug, title, standalonePageType, updatedAt }] }
+ */
+export async function getStandalonePages(tenantId: string): Promise<Page[] | null> {
+  const result = await fetchAPI<{ pages: Page[] }>(`/pages/standalone/${tenantId}`, {
+    cache: 'no-store',
+  });
+  
   return result?.pages || null;
 }
 

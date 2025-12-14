@@ -42,7 +42,7 @@ export class KeywordClusterService {
 
     // Fallback to legacy currentPillar system (for backward compatibility)
     if (tenant.currentPillar && tenant.currentPillar.keyword) {
-      const pillarKeyword = tenant.currentPillar.keyword;
+    const pillarKeyword = tenant.currentPillar.keyword;
       
       // Try to infer categoryKey from contentPillars or use a default
       let categoryKey = 'general';
@@ -50,25 +50,25 @@ export class KeywordClusterService {
         // Use first category as fallback
         categoryKey = tenant.contentPillars[0].categoryKey || 'general';
       }
-      
-      // Find or create cluster
-      let cluster = await KeywordCluster.findOne({
-        tenantId,
+    
+    // Find or create cluster
+    let cluster = await KeywordCluster.findOne({
+      tenantId,
         categoryKey,
-        pillarKeyword
-      });
+      pillarKeyword
+    });
 
-      if (!cluster) {
-        cluster = await KeywordCluster.create({
-          tenantId,
+    if (!cluster) {
+      cluster = await KeywordCluster.create({
+        tenantId,
           categoryKey,
-          pillarKeyword,
+        pillarKeyword,
           supportingTopics: []
-        });
+      });
         console.log(`✅ Created KeywordCluster (legacy) for pillar: "${pillarKeyword}" (category: ${categoryKey})`);
-      }
+    }
 
-      return cluster;
+    return cluster;
     }
 
     // If no pillar exists, try to initialize using new system
@@ -286,7 +286,7 @@ Return JSON with format:
    */
   static async markKeywordCreated(tenantId, keyword, pageId) {
     try {
-      const cluster = await this.getCurrentCluster(tenantId);
+    const cluster = await this.getCurrentCluster(tenantId);
       
       // Try new system first (supportingTopics)
       if (cluster.supportingTopics && cluster.supportingTopics.length > 0) {
@@ -307,13 +307,13 @@ Return JSON with format:
       // Note: supportingKeywords is a virtual that maps to supportingTopics
       const keywordEntry = cluster.supportingTopics?.find(
         t => t.keyword && t.keyword.toLowerCase() === keyword.toLowerCase()
-      );
+    );
 
-      if (keywordEntry) {
-        keywordEntry.status = 'created';
-        keywordEntry.pageId = pageId;
+    if (keywordEntry) {
+      keywordEntry.status = 'created';
+      keywordEntry.pageId = pageId;
         cluster.updatedAt = new Date();
-        await cluster.save();
+      await cluster.save();
       }
     } catch (error) {
       // If cluster doesn't exist or can't be created, that's okay - just log it

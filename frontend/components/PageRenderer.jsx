@@ -25,22 +25,24 @@ export default function PageRenderer({
   updatedAt,
   publishedAt,
   thumbnail,
+  isStandalone,
 }) {
-  // Render UX Layout if available (structured layout)
-  if (layout?.sections && Array.isArray(layout.sections) && layout.sections.length > 0) {
+  // Render UX Layout if available (structured layout) - skip for standalone pages
+  if (!isStandalone && layout?.sections && Array.isArray(layout.sections) && layout.sections.length > 0) {
     return (
       <>
         {/* Schema Markup for SEO */}
         {schemaMarkup && <SchemaMarkup schemas={schemaMarkup} />}
         
         <div className="page-renderer">
+          
           {renderUXLayout(layout)}
         </div>
       </>
     );
   }
 
-  // Editorial article layout for HTML content
+  // Editorial article layout for HTML content (used for both regular and standalone pages)
   return (
     <>
       {/* Schema Markup for SEO */}
@@ -56,8 +58,9 @@ export default function PageRenderer({
         updatedAt={updatedAt}
         publishedAt={publishedAt}
         intent={intent || 'informational'}
-        monetizationMode={monetizationMode || 'adsense'}
+        monetizationMode={isStandalone ? 'none' : (monetizationMode || 'adsense')} // No ads for standalone pages
         thumbnail={thumbnail}
+        isStandalone={isStandalone}
       />
     </>
   );

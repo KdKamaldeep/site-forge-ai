@@ -97,6 +97,26 @@ router.get('/category/:tenantId/:categoryKey', PageController.listByCategory);
 
 /**
  * @swagger
+ * /api/pages/standalone/{tenantId}:
+ *   get:
+ *     summary: Get standalone pages for tenant
+ *     description: Returns standalone pages (Privacy Policy, About Us, Contact, Cookie Disclosure) for footer links
+ *     tags: [Pages]
+ *     parameters:
+ *       - in: path
+ *         name: tenantId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Tenant ID
+ *     responses:
+ *       200:
+ *         description: Standalone pages list
+ */
+router.get('/standalone/:tenantId', PageController.getStandalonePages);
+
+/**
+ * @swagger
  * /api/pages/{tenantId}/{slug}:
  *   get:
  *     summary: Get page by slug (for Next.js SSR)

@@ -115,6 +115,14 @@ const tenantSchema = new mongoose.Schema({
     monetizationMode: { type: String, default: 'adsense', enum: ['adsense', 'affiliate', 'lead', 'mixed'] },
     postingRatePerWeek: { type: Number, default: 2, min: 0, max: 10 }
   }],
+  // Standalone pages (Privacy Policy, About Us, Contact, Cookie Disclosure)
+  standalonePages: [{
+    pageType: { type: String, required: true, enum: ['privacy-policy', 'about-us', 'contact', 'cookie-disclosure'] },
+    title: { type: String, required: true, trim: true },
+    slug: { type: String, required: true, trim: true },
+    description: { type: String, trim: true, default: null },
+    enabled: { type: Boolean, default: true }
+  }],
   // Monetization configuration
   monetization: {
     primary: { type: String, default: 'adsense', enum: ['adsense', 'affiliate', 'lead', 'mixed'] },

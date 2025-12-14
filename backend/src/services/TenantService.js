@@ -75,6 +75,7 @@ export class TenantService {
       brandIdentity: tenant.brandIdentity || null,
       navigation: tenant.navigation || [],
       contentPillars: tenant.contentPillars || [],
+      standalonePages: tenant.standalonePages || [],
       activePillar: tenant.activePillar || null,
       pillarHistoryNew: tenant.pillarHistoryNew || [],
       monetization: tenant.monetization || null,

@@ -5,16 +5,37 @@
  * Multi-column footer matching design
  */
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatTitle } from '@/lib/textFormat';
+import { getStandalonePages } from '@/lib/api';
 import styles from './Footer.module.css';
 
 export default function Footer({ navigation, tenant, categories = [], popularPosts = [] }) {
+  const [standalonePages, setStandalonePages] = useState([]);
   const currentYear = new Date().getFullYear();
   const brandName = tenant?.brandIdentity?.brandName || tenant?.name || 'Site';
   const formattedBrandName = brandName.split(' ').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
   ).join(' ');
+
+  // Fetch standalone pages for footer
+  useEffect(() => {
+    async function fetchStandalonePages() {
+      if (!tenant?._id) return;
+      
+      try {
+        const pages = await getStandalonePages(tenant._id);
+        if (pages && Array.isArray(pages)) {
+          setStandalonePages(pages);
+        }
+      } catch (error) {
+        console.error('Error fetching standalone pages:', error);
+      }
+    }
+    
+    fetchStandalonePages();
+  }, [tenant?._id]);
 
   return (
     <footer className={styles.mainFooter}>
@@ -54,16 +75,25 @@ export default function Footer({ navigation, tenant, categories = [], popularPos
           </div>
         </div>
 
-        {/* Useful Links */}
+        {/* Useful Links - Standalone Pages */}
         <div className={styles.footerColumn}>
           <h4 className={styles.footerHeading}>Useful Links</h4>
           <ul className={styles.footerLinks}>
-            <li><Link href="/about">About</Link></li>
-            <li><Link href="/news">News</Link></li>
-            <li><Link href="/advertise">Advertise</Link></li>
-            <li><Link href="/support">Support</Link></li>
-            <li><Link href="/features">Features</Link></li>
-            <li><Link href="/contact">Contact</Link></li>
+            {standalonePages.length > 0 ? (
+              standalonePages.map((page) => (
+                <li key={page._id}>
+                  <Link href={`/${page.slug}`}>{formatTitle(page.title)}</Link>
+                </li>
+              ))
+            ) : (
+              // Fallback if no standalone pages are available yet
+              <>
+                <li><Link href="/about-us">About Us</Link></li>
+                <li><Link href="/contact">Contact</Link></li>
+                <li><Link href="/privacy-policy">Privacy Policy</Link></li>
+                <li><Link href="/cookie-disclosure">Cookie Disclosure</Link></li>
+              </>
+            )}
           </ul>
         </div>
 

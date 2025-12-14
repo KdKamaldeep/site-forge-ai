@@ -24,11 +24,7 @@ async function seedSmartHomeTricks() {
 
     // Check if tenant already exists
     const existingTenant = await Tenant.findOne({ domain: DOMAIN });
-    if (existingTenant) {
-      console.log(`⚠️  Tenant "${DOMAIN}" already exists. Deleting...`);
-      await Tenant.deleteOne({ domain: DOMAIN });
-      console.log('✅ Deleted existing tenant');
-    }
+    const isUpdate = !!existingTenant;
 
     // Prepare tenant data
     const tenantData = {
@@ -68,6 +64,38 @@ async function seedSmartHomeTricks() {
         { label: 'Energy & Bills',   path: '/energy-bills',     categoryKey: 'energy-bills',     icon: '', order: 2 },
         { label: 'Home Safety',      path: '/home-safety',      categoryKey: 'home-safety',      icon: '', order: 3 },
         { label: 'How It Works',     path: '/how-it-works',     categoryKey: 'how-it-works',     icon: '', order: 4 }
+      ],
+
+      // Standalone Pages
+      standalonePages: [
+        {
+          pageType: 'privacy-policy',
+          title: 'Privacy Policy',
+          slug: 'privacy-policy',
+          description: 'Our privacy policy explains how we collect, use, and protect your personal information.',
+          enabled: true
+        },
+        {
+          pageType: 'about-us',
+          title: 'About Us',
+          slug: 'about-us',
+          description: 'Learn more about our mission, values, and the team behind Smart Home Tricks.',
+          enabled: true
+        },
+        {
+          pageType: 'contact',
+          title: 'Contact Us',
+          slug: 'contact',
+          description: 'Get in touch with us. We\'d love to hear from you.',
+          enabled: true
+        },
+        {
+          pageType: 'cookie-disclosure',
+          title: 'Cookie and Advertising Disclosure',
+          slug: 'cookie-disclosure',
+          description: 'Information about our use of cookies and advertising practices.',
+          enabled: true
+        }
       ],
 
       // Content Pillars
@@ -194,31 +222,53 @@ async function seedSmartHomeTricks() {
       googleSearchConsoleVerified: false
     };
 
-    // Create tenant
-    const tenant = new Tenant(tenantData);
-    await tenant.save();
-
-    console.log('✅ SmartHomeTricks tenant created successfully!');
+    // Create or update tenant
+    let tenant;
+    if (isUpdate) {
+      console.log(`⚠️  Tenant "${DOMAIN}" already exists. Updating...`);
+      // Update existing tenant with new data
+      Object.assign(existingTenant, tenantData);
+      // Preserve existing fields that shouldn't be overwritten
+      // Keep existing _id, createdAt, and other system fields
+      await existingTenant.save();
+      tenant = existingTenant;
+      console.log('✅ Updated existing tenant');
+    } else {
+      // Create new tenant
+      tenant = new Tenant(tenantData);
+      await tenant.save();
+      console.log('✅ SmartHomeTricks tenant created successfully!');
+    }
     console.log(`   Tenant ID: ${tenant._id}`);
     console.log(`   Domain: ${tenant.domain}`);
     console.log(`   Name: ${tenant.name}`);
-    console.log(`   Categories: ${tenant.contentPillars.length}`);
-    console.log(`   Navigation items: ${tenant.navigation.length}`);
-    console.log(`   Publishing: ${tenant.publishingStrategy.pagesPerWeek} pages/week`);
+    console.log(`   Categories: ${tenant.contentPillars?.length || 0}`);
+    console.log(`   Navigation items: ${tenant.navigation?.length || 0}`);
+    console.log(`   Standalone pages: ${tenant.standalonePages?.length || 0}`);
+    console.log(`   Publishing: ${tenant.publishingStrategy?.pagesPerWeek || 0} pages/week`);
 
     console.log('\n📋 Site DNA Summary:');
-    console.log(`   Brand: ${tenant.brandIdentity.brandName} - ${tenant.brandIdentity.tagline}`);
-    console.log(`   Language: ${tenant.brandIdentity.language}, Country: ${tenant.brandIdentity.country}`);
-    console.log(`   Tone: ${tenant.brandIdentity.tone}`);
-    console.log(`   Monetization: ${tenant.monetization.primary}`);
-    console.log(`   Compliance: Medical disclaimer: ${tenant.compliance.medicalDisclaimer}, Legal disclaimer: ${tenant.compliance.legalDisclaimer}`);
+    console.log(`   Brand: ${tenant.brandIdentity?.brandName || 'N/A'} - ${tenant.brandIdentity?.tagline || 'N/A'}`);
+    console.log(`   Language: ${tenant.brandIdentity?.language || 'N/A'}, Country: ${tenant.brandIdentity?.country || 'N/A'}`);
+    console.log(`   Tone: ${tenant.brandIdentity?.tone || 'N/A'}`);
+    console.log(`   Monetization: ${tenant.monetization?.primary || 'N/A'}`);
+    console.log(`   Compliance: Medical disclaimer: ${tenant.compliance?.medicalDisclaimer || false}, Legal disclaimer: ${tenant.compliance?.legalDisclaimer || false}`);
 
-    console.log('\n🎯 Content Categories:');
-    tenant.contentPillars.forEach((pillar, index) => {
-      console.log(`   ${index + 1}. ${pillar.categoryKey}: ${pillar.postingRatePerWeek} posts/week, ${pillar.seedKeywords.length} seed keywords`);
-    });
+    if (tenant.contentPillars && tenant.contentPillars.length > 0) {
+      console.log('\n🎯 Content Categories:');
+      tenant.contentPillars.forEach((pillar, index) => {
+        console.log(`   ${index + 1}. ${pillar.categoryKey}: ${pillar.postingRatePerWeek} posts/week, ${pillar.seedKeywords?.length || 0} seed keywords`);
+      });
+    }
 
-    console.log('\n✅ Seed completed successfully!');
+    if (tenant.standalonePages && tenant.standalonePages.length > 0) {
+      console.log('\n📄 Standalone Pages:');
+      tenant.standalonePages.forEach((page, index) => {
+        console.log(`   ${index + 1}. ${page.title} (${page.pageType}) - ${page.enabled ? 'Enabled' : 'Disabled'}`);
+      });
+    }
+
+    console.log(`\n✅ Seed ${isUpdate ? 'updated' : 'completed'} successfully!`);
     console.log(`\n🌐 Access the tenant at: http://localhost:3000 (if frontend is configured)`);
     console.log(`📊 Admin panel: http://localhost:5000/admin/tenants/edit/${tenant._id}`);
 

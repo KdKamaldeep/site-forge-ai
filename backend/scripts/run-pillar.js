@@ -428,7 +428,7 @@ async function runPillarGeneration() {
     const args = process.argv.slice(2);
     
     if (args.length < 1) {
-      console.error('❌ Usage: node scripts/run-pillar.js <domain> [--count N] [--category CATEGORY] [--slug SLUG] [--gen-logo]');
+      console.error('❌ Usage: node scripts/run-pillar.js <domain> [--count N] [--category CATEGORY] [--slug SLUG] [--gen-logo] [--standalonePagesOnly]');
       console.error('');
       console.error('Examples:');
       console.error('   node scripts/run-pillar.js example.com');
@@ -436,12 +436,14 @@ async function runPillarGeneration() {
       console.error('   node scripts/run-pillar.js example.com --category technology');
       console.error('   node scripts/run-pillar.js example.com --slug how-to-use-ai');
       console.error('   node scripts/run-pillar.js example.com --gen-logo');
+      console.error('   node scripts/run-pillar.js example.com --standalonePagesOnly');
       console.error('');
       console.error('Options:');
-      console.error('   --count N        Number of pages to create per pillar (default: 3)');
-      console.error('   --category KEY   Process only the specified category');
-      console.error('   --slug SLUG     Regenerate the page with the specified slug');
-      console.error('   --gen-logo      Generate and set logo for tenant (does nothing else)');
+      console.error('   --count N              Number of pages to create per pillar (default: 3)');
+      console.error('   --category KEY         Process only the specified category');
+      console.error('   --slug SLUG            Regenerate the page with the specified slug');
+      console.error('   --gen-logo            Generate and set logo for tenant (does nothing else)');
+      console.error('   --standalonePagesOnly Generate only standalone pages (Privacy Policy, About Us, etc.)');
       console.error('');
       console.error('This will create the specified number of pages for EACH pillar/category.');
       process.exit(1);
@@ -476,6 +478,9 @@ async function runPillarGeneration() {
 
     // Parse --gen-logo flag
     const genLogo = args.includes('--gen-logo');
+
+    // Parse --standalonePagesOnly flag
+    const standalonePagesOnly = args.includes('--standalonePagesOnly');
 
     console.log('🔌 Connecting to MongoDB...');
     await mongoose.connect(MONGODB_URI);
@@ -577,7 +582,188 @@ async function runPillarGeneration() {
       console.log('👋 Disconnected from MongoDB\n');
       process.exit(0);
     }
+
+    // Handle --standalonePagesOnly mode: generate standalone pages only
+    if (standalonePagesOnly) {
+      console.log(`\n📄 STANDALONE PAGES MODE: Generating standalone pages only`);
+      console.log('='.repeat(70));
+      console.log(`📋 Tenant: ${tenant.name} (${tenant.domain})`);
+      
+      // Re-fetch tenant to ensure we have all fields including standalonePages
+      // getTenantByDomain returns a formatted object, so we need the full document
+      const fullTenant = await TenantService.getTenantById(tenantId);
+      
+      if (!fullTenant || !fullTenant.standalonePages || fullTenant.standalonePages.length === 0) {
+        console.error('❌ No standalone pages configured for this tenant');
+        console.error('   Configure standalonePages in tenant.standalonePages array');
+        console.error(`   Current tenant data:`, {
+          hasStandalonePages: !!fullTenant?.standalonePages,
+          standalonePagesLength: fullTenant?.standalonePages?.length || 0,
+          tenantId: tenantId
+        });
+        await mongoose.disconnect();
+        process.exit(1);
+      }
+
+      const enabledStandalonePages = fullTenant.standalonePages.filter(sp => sp.enabled !== false);
+      console.log(`   Found ${enabledStandalonePages.length} enabled standalone page(s) to generate\n`);
+
+      let successCount = 0;
+      let skipCount = 0;
+      let errorCount = 0;
+
+      for (const standalonePage  of enabledStandalonePages) {
+        try {
+          // Check if page already exists
+          const existingPage = await PageService.getPageBySlug(tenantId, standalonePage.slug);
+          
+          if (existingPage && existingPage.isStandalone) {
+            console.log(`   ⏭️  Skipping "${standalonePage.title}" (already exists)`);
+            skipCount++;
+            continue;
+          }
+          
+          console.log(`   📝 Generating "${standalonePage.title}" (${standalonePage.pageType})...`);
+                  // Generate content using buildMicrosite (skip images for standalone pages, pass page type for custom prompt)
+          const result = await MicrositeBuilderAgent.buildMicrosite(tenantId, [standalonePage.title], { 
+            skipImages: true,
+            standalonePageType: standalonePage.pageType
+          });
+          
+          if (result.pages && result.pages.length > 0) {
+            // Wait a moment for the page to be saved
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Find the page by slug (buildMicrosite uses slugify which should match our slug)
+            let pageToUpdate = await PageService.getPageBySlug(tenantId, standalonePage.slug);
+            
+            // If not found by exact slug, try to find by title
+            if (!pageToUpdate) {
+              const allPages = await PageService.getAllPagesForTenant(tenantId, true); // Include standalone
+              pageToUpdate = allPages.find(p => 
+                p.title && p.title.toLowerCase() === standalonePage.title.toLowerCase()
+              );
+            }
+            
+            if (pageToUpdate) {
+              // Update the page to mark it as standalone and ensure correct slug
+              const updateData = {
+                isStandalone: true,
+                standalonePageType: standalonePage.pageType,
+                categoryKey: null, // Standalone pages have no category
+                primaryKeyword: null // Standalone pages have no primary keyword
+              };
+              
+              // Ensure slug matches (in case slugify produced a different slug)
+              if (pageToUpdate.slug !== standalonePage.slug) {
+                updateData.slug = standalonePage.slug;
+              }
+              
+              await PageService.updatePage(pageToUpdate._id, updateData);
+              console.log(`   ✅ Created standalone page: "${standalonePage.title}" (slug: ${standalonePage.slug})`);
+              successCount++;
+            } else {
+              console.warn(`   ⚠️  Page created but could not be found/updated for "${standalonePage.title}"`);
+              errorCount++;
+            }
+          } else {
+            console.warn(`   ⚠️  Failed to generate content for "${standalonePage.title}"`);
+            errorCount++;
+          }
+        } catch (error) {
+          console.error(`   ❌ Error generating "${standalonePage.title}":`, error.message);
+          errorCount++;
+        }
+      }
+
+      console.log('\n' + '='.repeat(70));
+      console.log('📊 STANDALONE PAGES SUMMARY');
+      console.log('='.repeat(70));
+      console.log(`   ✅ Created: ${successCount}`);
+      console.log(`   ⏭️  Skipped (already exist): ${skipCount}`);
+      console.log(`   ❌ Errors: ${errorCount}`);
+      console.log('='.repeat(70) + '\n');
+
+      await mongoose.disconnect();
+      console.log('👋 Disconnected from MongoDB\n');
+      process.exit(0);
+    }
+
     console.log(`✅ Found tenant: ${tenant.name} (${tenant.domain})`);
+
+    // STEP 2: Generate standalone pages if they don't exist (only in normal mode)
+    // Re-fetch tenant to ensure we have standalonePages field
+    const fullTenantForStandalone = await TenantService.getTenantById(tenantId);
+    if (!targetSlug && !targetCategory && !genLogo && !standalonePagesOnly && fullTenantForStandalone?.standalonePages && fullTenantForStandalone.standalonePages.length > 0) {
+      console.log(`\n📄 STEP 2: Generating standalone pages...`);
+      console.log('='.repeat(70));
+      
+      const enabledStandalonePages = fullTenantForStandalone.standalonePages.filter(sp => sp.enabled !== false);
+      console.log(`   Found ${enabledStandalonePages.length} enabled standalone page(s) to generate\n`);
+      
+      for (const standalonePage of enabledStandalonePages) {
+        try {
+          // Check if page already exists
+          const existingPage = await PageService.getPageBySlug(tenantId, standalonePage.slug);
+          
+          if (existingPage && existingPage.isStandalone) {
+            console.log(`   ⏭️  Skipping "${standalonePage.title}" (already exists)`);
+            continue;
+          }
+          
+          console.log(`   📝 Generating "${standalonePage.title}" (${standalonePage.pageType})...`);
+          
+          // Generate content using buildMicrosite (skip images for standalone pages, pass page type for custom prompt)
+          // Note: buildMicrosite will create/update the page, then we'll mark it as standalone
+          const result = await MicrositeBuilderAgent.buildMicrosite(tenantId, [standalonePage.title], { 
+            skipImages: true,
+            standalonePageType: standalonePage.pageType
+          });
+          
+          if (result.pages && result.pages.length > 0) {
+            // Wait a moment for the page to be saved
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Find the page by slug (buildMicrosite uses slugify which should match our slug)
+            let pageToUpdate = await PageService.getPageBySlug(tenantId, standalonePage.slug);
+            
+            // If not found by exact slug, try to find by title
+            if (!pageToUpdate) {
+              const allPages = await PageService.getAllPagesForTenant(tenantId, true); // Include standalone pages
+              pageToUpdate = allPages.find(p => 
+                p.title && p.title.toLowerCase() === standalonePage.title.toLowerCase()
+              );
+            }
+            
+            if (pageToUpdate) {
+              // Update the page to mark it as standalone and ensure correct slug
+              const updateData = {
+                isStandalone: true,
+                standalonePageType: standalonePage.pageType,
+                categoryKey: null, // Standalone pages have no category
+                primaryKeyword: null // Standalone pages have no primary keyword
+              };
+              
+              // Ensure slug matches (in case slugify produced a different slug)
+              if (pageToUpdate.slug !== standalonePage.slug) {
+                updateData.slug = standalonePage.slug;
+              }
+              
+              await PageService.updatePage(pageToUpdate._id, updateData);
+              console.log(`   ✅ Created standalone page: "${standalonePage.title}" (slug: ${standalonePage.slug})`);
+            } else {
+              console.warn(`   ⚠️  Page created but could not be found/updated for "${standalonePage.title}"`);
+            }
+          } else {
+            console.warn(`   ⚠️  Failed to generate content for "${standalonePage.title}"`);
+          }
+        } catch (error) {
+          console.error(`   ❌ Error generating "${standalonePage.title}":`, error.message);
+        }
+      }
+      
+      console.log('='.repeat(70) + '\n');
+    }
 
     // Handle --slug mode: regenerate a specific page
     if (targetSlug) {

@@ -99,6 +99,9 @@ export default async function DynamicPathPage({ params }) {
               categoryKey={page.categoryKey}
               primaryKeyword={page.primaryKeyword}
               thumbnail={page.thumbnail}
+              isStandalone={page.isStandalone}
+              updatedAt={page.updatedAt}
+              publishedAt={page.publishedAt}
             />
           );
         }
@@ -203,6 +206,8 @@ export default async function DynamicPathPage({ params }) {
             primaryKeyword={page.primaryKeyword}
             updatedAt={page.updatedAt}
             thumbnail={page.thumbnail}
+            isStandalone={page.isStandalone}
+            publishedAt={page.publishedAt}
           />
         </>
       );

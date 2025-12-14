@@ -22,6 +22,7 @@ export default function ArticleLayout({
   intent,
   monetizationMode,
   thumbnail,
+  isStandalone,
 }) {
   const contentRef = useRef(null);
   const [toc, setToc] = useState([]);
@@ -61,26 +62,38 @@ export default function ArticleLayout({
       }
     });
 
-    // Process monetization placeholders - replace with React components
-    const adSlots = contentRef.current.querySelectorAll('[data-ad-slot]');
-    adSlots.forEach((el) => {
-      const slot = el.getAttribute('data-ad-slot');
-      const wrapper = document.createElement('div');
-      wrapper.setAttribute('data-react-ad-slot', slot);
-      el.parentNode?.replaceChild(wrapper, el);
-    });
+    // Process monetization placeholders - replace with React components (skip if monetizationMode is 'none')
+    if (monetizationMode !== 'none') {
+      const adSlots = contentRef.current.querySelectorAll('[data-ad-slot]');
+      adSlots.forEach((el) => {
+        const slot = el.getAttribute('data-ad-slot');
+        const wrapper = document.createElement('div');
+        wrapper.setAttribute('data-react-ad-slot', slot);
+        el.parentNode?.replaceChild(wrapper, el);
+      });
 
-    const affiliateTables = contentRef.current.querySelectorAll('[data-affiliate-table]');
-    affiliateTables.forEach((el) => {
-      const wrapper = document.createElement('div');
-      wrapper.setAttribute('data-react-affiliate-table', 'true');
-      el.parentNode?.replaceChild(wrapper, el);
-    });
-  }, [content]);
+      const affiliateTables = contentRef.current.querySelectorAll('[data-affiliate-table]');
+      affiliateTables.forEach((el) => {
+        const wrapper = document.createElement('div');
+        wrapper.setAttribute('data-react-affiliate-table', 'true');
+        el.parentNode?.replaceChild(wrapper, el);
+      });
+    } else {
+      // Remove ad placeholders for standalone pages (no monetization)
+      const adSlots = contentRef.current.querySelectorAll('[data-ad-slot]');
+      adSlots.forEach((el) => {
+        el.remove();
+      });
+      const affiliateTables = contentRef.current.querySelectorAll('[data-affiliate-table]');
+      affiliateTables.forEach((el) => {
+        el.remove();
+      });
+    }
+  }, [content, monetizationMode]);
 
-  // Render monetization components in placeholders
+  // Render monetization components in placeholders (skip if monetizationMode is 'none')
   useEffect(() => {
-    if (!contentRef.current) return;
+    if (!contentRef.current || monetizationMode === 'none') return;
 
     const adPlaceholders = contentRef.current.querySelectorAll('[data-react-ad-slot]');
     adPlaceholders.forEach((placeholder) => {
@@ -131,7 +144,7 @@ export default function ArticleLayout({
         `;
       }
     });
-  }, [content]);
+  }, [content, monetizationMode]);
 
   // Update active heading on scroll
   useEffect(() => {
@@ -195,8 +208,10 @@ export default function ArticleLayout({
           )}
           
           {/* Article Header */}
+          {!isStandalone && (
           <header className={styles.articleHeader}>
             <h1 className={styles.articleTitle}>{formatTitle(title)}</h1>
+            
             
             <div className={styles.articleMeta}>
               {readingTime && (
@@ -218,8 +233,9 @@ export default function ArticleLayout({
                   )}
                 </span>
               )}
-            </div>
-          </header>
+              </div>
+            </header>
+          )}
 
           {/* Article Content */}
           <div 

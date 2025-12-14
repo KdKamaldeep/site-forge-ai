@@ -7,7 +7,6 @@ import NewsFlash from '@/components/home/NewsFlash';
 import FeaturedGrid from '@/components/home/FeaturedGrid';
 import LatestNewsSection from '@/components/home/LatestNewsSection';
 import EditorsPicksSection from '@/components/home/EditorsPicksSection';
-import Pagination from '@/components/home/Pagination';
 import HomeSidebar from '@/components/home/HomeSidebar';
 import styles from './page.module.css';
 
@@ -39,9 +38,17 @@ export default async function HomePage() {
     // Fetch homepage
     const page = await getHomePage(tenantId);
     
-    // Fetch latest pages
+    // Fetch latest pages (exclude standalone pages)
     const latestPages = await listPages(tenantId);
-    const allArticles = Array.isArray(latestPages) ? latestPages : [];
+    const allArticles = Array.isArray(latestPages) 
+      ? latestPages.filter(page => {
+          // Explicitly exclude standalone pages
+          // Exclude if: isStandalone is true, or has standalonePageType
+          if (page.isStandalone === true || page.isStandalone === 'true') return false;
+          if (page.standalonePageType) return false;
+          return true;
+        })
+      : [];
 
     // If no homepage, show default home with new design
     if (!page) {
@@ -58,8 +65,17 @@ export default async function HomePage() {
       const usedIds = new Set([...featuredArticles.map(a => a._id), ...latestArticles.slice(0, 8).map(a => a._id)].filter(Boolean));
       const editorPicksArticles = allArticles.filter(a => !usedIds.has(a._id)).slice(0, 6);
 
-      // News flash items
-      const newsFlashItems = allArticles.slice(0, 3).map(p => p.title).filter(Boolean);
+      // News flash items (exclude standalone pages explicitly)
+      const newsFlashItems = allArticles
+        .filter(p => {
+          // Double-check: exclude standalone pages
+          if (p.isStandalone === true || p.isStandalone === 'true') return false;
+          if (p.standalonePageType) return false;
+          return true;
+        })
+        .slice(0, 3)
+        .map(p => p.title)
+        .filter(Boolean);
 
       return (
         <div className={styles.homePage}>
@@ -93,21 +109,6 @@ export default async function HomePage() {
               articles={editorPicksArticles}
               title="Editor's Picks"
             />
-          )}
-
-          {/* Pagination Wrapper */}
-          {latestArticles.length > 12 && (
-            <div className={styles.paginationWrapper}>
-              <Pagination items={latestArticles} itemsPerPage={12}>
-                {(paginatedItems) => (
-                  <LatestNewsSection
-                    articles={paginatedItems}
-                    categories={categories}
-                    sidebarContent={null}
-                  />
-                )}
-              </Pagination>
-            </div>
           )}
         </div>
       );

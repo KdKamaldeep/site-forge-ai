@@ -1,0 +1,100 @@
+.container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+.wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.content {
+  width: 100%;
+}
+
+.contentBody {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #374151;
+}
+
+.contentBody :global(h2) {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.contentBody :global(h3) {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.contentBody :global(p) {
+  margin-bottom: 1rem;
+}
+
+.contentBody :global(ul),
+.contentBody :global(ol) {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.contentBody :global(li) {
+  margin-bottom: 0.5rem;
+}
+
+.contentBody :global(strong) {
+  font-weight: 600;
+  color: #111827;
+}
+
+.contentBody :global(a) {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.contentBody :global(a:hover) {
+  color: #1d4ed8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 1.5rem 1rem;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .contentBody :global(h2) {
+    font-size: 1.25rem;
+  }
+
+  .contentBody :global(h3) {
+    font-size: 1.125rem;
+  }
+}

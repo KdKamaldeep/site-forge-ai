@@ -122,9 +122,9 @@ export class PageController {
         return res.status(400).json({ error: 'Invalid tenantId format' });
       }
 
-      const pages = await PageService.getAllPagesForTenant(tenantId);
+      const pages = await PageService.getAllPagesForTenant(tenantId, false); // Exclude standalone pages
       const filtered = pages
-        .filter(p => p.categoryKey === categoryKey)
+        .filter(p => p.categoryKey === categoryKey && !p.isStandalone) // Double-check: exclude standalone
         .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
         .slice(skip, skip + limit);
 
@@ -172,6 +172,29 @@ export class PageController {
       const tenantId = req.params.tenantId || req.tenantId;
       const pages = await PageService.listPages(tenantId);
       res.json(pages);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get standalone pages for a tenant
+   */
+  static async getStandalonePages(req, res, next) {
+    try {
+      const { tenantId } = req.params;
+      
+      if (!tenantId) {
+        return res.status(400).json({ error: 'tenantId is required' });
+      }
+
+      // Validate tenantId is a valid MongoDB ObjectId
+      if (!mongoose.Types.ObjectId.isValid(tenantId)) {
+        return res.status(400).json({ error: 'Invalid tenantId format' });
+      }
+
+      const pages = await PageService.getStandalonePages(tenantId);
+      res.json({ pages });
     } catch (error) {
       next(error);
     }

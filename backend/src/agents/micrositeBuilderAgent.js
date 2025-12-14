@@ -23,8 +23,13 @@ import slugify from '../utils/slugify.js';
 export class MicrositeBuilderAgent {
   /**
    * Build a complete microsite for a tenant
+   * @param {string} tenantId - Tenant ID
+   * @param {string[]} topics - Array of topics to generate pages for
+   * @param {object} options - Optional configuration
+   * @param {boolean} options.skipImages - Skip image generation (default: false)
    */
-  static async buildMicrosite(tenantId, topics) {
+  static async buildMicrosite(tenantId, topics, options = {}) {
+    const { skipImages = false, standalonePageType = null } = options;
     const results = {
       pages: [],
       errors: []
@@ -57,10 +62,10 @@ export class MicrositeBuilderAgent {
             const keywords = await KeywordService.generateKeywords(topic, 10, tenantId);
 
             // 2. Generate long-form content with E-E-A-T principles
-            const contentData = await this.generateContentWithEAT(topic, keywords, tenant);
+            const contentData = await this.generateContentWithEAT(topic, keywords, tenant, { standalonePageType });
 
             // 2.5. Process image placeholders in content and generate actual images
-            if (process.env.GEMINI_API_KEY) {
+            if (!skipImages && process.env.GEMINI_API_KEY) {
               try {
                 console.log(`🖼️  Processing content images for: ${topic}`);
                 contentData.content = await ContentImageService.processContentImages(
@@ -72,6 +77,8 @@ export class MicrositeBuilderAgent {
                 console.warn(`⚠️  Content image processing failed:`, error.message);
                 // Continue without images
               }
+            } else if (skipImages) {
+              console.log(`⏭️  Skipping image generation for: ${topic}`);
             }
 
             // 3. Validate content quality
@@ -93,15 +100,21 @@ export class MicrositeBuilderAgent {
             }
             console.log(`📊 Content quality score: ${qualityCheck.score}/100`);
 
-            // 4. Generate UX Layout with tenant-specific style
-            const uxLayout = await UXLayoutService.generateUXLayout(
-              contentData.content, 
-              tenant.layoutStyle || 'standard',
-              tenant
-            );
-
-            // 5. Optimize images in layout
-            const optimizedLayout = ImageOptimizationService.optimizeLayoutImages(uxLayout);
+            // 4. Generate UX Layout with tenant-specific style (skip for standalone pages)
+            let uxLayout = null;
+            let optimizedLayout = null;
+            
+            if (!standalonePageType) {
+              uxLayout = await UXLayoutService.generateUXLayout(
+                contentData.content, 
+                tenant.layoutStyle || 'standard',
+                tenant
+              );
+              // 5. Optimize images in layout
+              optimizedLayout = ImageOptimizationService.optimizeLayoutImages(uxLayout);
+            } else {
+              console.log(`⏭️  Skipping UX layout generation for standalone page: ${topic}`);
+            }
 
             // 6. Calculate reading time and word count
             const wordCount = qualityCheck.metrics.wordCount;
@@ -127,12 +140,14 @@ export class MicrositeBuilderAgent {
                 citations: contentData.citations,
                 lastReviewed: new Date()
               },
-              uxLayout: optimizedLayout,
+              uxLayout: optimizedLayout, // null for standalone pages
               schemaMarkup,
               readingTime,
               wordCount,
-              adZones: ['above-content', 'mid-content', 'below-content'], // AdSense-ready zones
-              qualityScore: qualityCheck.score // Store quality score
+              adZones: standalonePageType ? [] : ['above-content', 'mid-content', 'below-content'], // No ads for standalone pages
+              qualityScore: qualityCheck.score, // Store quality score
+              intent: standalonePageType ? 'informational' : undefined, // Standalone pages are informational
+              monetizationMode: standalonePageType ? 'none' : undefined // No monetization for standalone pages
             });
 
             results.pages.push({ ...updatedPage.toObject(), action: 'updated' });
@@ -146,10 +161,10 @@ export class MicrositeBuilderAgent {
             const keywords = await KeywordService.generateKeywords(topic, 10, tenantId);
 
             // 2. Generate long-form content with E-E-A-T principles
-            const contentData = await this.generateContentWithEAT(topic, keywords, tenant);
+            const contentData = await this.generateContentWithEAT(topic, keywords, tenant, { standalonePageType });
 
             // 2.5. Process image placeholders in content and generate actual images
-            if (process.env.GEMINI_API_KEY) {
+            if (!skipImages && process.env.GEMINI_API_KEY) {
               try {
                 console.log(`🖼️  Processing content images for: ${topic}`);
                 contentData.content = await ContentImageService.processContentImages(
@@ -161,6 +176,8 @@ export class MicrositeBuilderAgent {
                 console.warn(`⚠️  Content image processing failed:`, error.message);
                 // Continue without images
               }
+            } else if (skipImages) {
+              console.log(`⏭️  Skipping image generation for: ${topic}`);
             }
 
             // 3. Validate content quality
@@ -182,33 +199,43 @@ export class MicrositeBuilderAgent {
             }
             console.log(`📊 Content quality score: ${qualityCheck.score}/100`);
 
-            // 4. Generate UX Layout with tenant-specific style
-            const uxLayout = await UXLayoutService.generateUXLayout(
-              contentData.content, 
-              tenant.layoutStyle || 'standard',
-              tenant
-            );
+            // 4. Generate UX Layout with tenant-specific style (skip for standalone pages)
+            let uxLayout = null;
+            let layoutWithImages = null;
+            let optimizedLayout = null;
+            
+            if (!standalonePageType) {
+              uxLayout = await UXLayoutService.generateUXLayout(
+                contentData.content, 
+                tenant.layoutStyle || 'standard',
+                tenant
+              );
 
-            // 5. Generate images for the layout using Gemini
-            let layoutWithImages = uxLayout;
-            if (process.env.GEMINI_API_KEY) {
-              try {
-                console.log(`📸 Generating images for page: ${topic}`);
-                layoutWithImages = await GeminiImageService.generateLayoutImages(
-                  uxLayout,
-                  topic,
-                  tenant,
-                  contentData.content // Pass content to extract image prompts
-                );
-              } catch (error) {
-                console.warn(`⚠️  Image generation failed for "${topic}":`, error.message);
-                // Continue without images if generation fails
-                layoutWithImages = uxLayout;
+              // 5. Generate images for the layout using Gemini
+              layoutWithImages = uxLayout;
+              if (!skipImages && process.env.GEMINI_API_KEY) {
+                try {
+                  console.log(`📸 Generating images for page: ${topic}`);
+                  layoutWithImages = await GeminiImageService.generateLayoutImages(
+                    uxLayout,
+                    topic,
+                    tenant,
+                    contentData.content // Pass content to extract image prompts
+                  );
+                } catch (error) {
+                  console.warn(`⚠️  Image generation failed for "${topic}":`, error.message);
+                  // Continue without images if generation fails
+                  layoutWithImages = uxLayout;
+                }
+              } else if (skipImages) {
+                console.log(`⏭️  Skipping layout image generation for: ${topic}`);
               }
-            }
 
-            // 6. Optimize images in layout
-            const optimizedLayout = ImageOptimizationService.optimizeLayoutImages(layoutWithImages);
+              // 6. Optimize images in layout
+              optimizedLayout = ImageOptimizationService.optimizeLayoutImages(layoutWithImages);
+            } else {
+              console.log(`⏭️  Skipping UX layout generation for standalone page: ${topic}`);
+            }
 
             // 7. Calculate reading time and word count
             const wordCount = qualityCheck.metrics.wordCount;
@@ -258,14 +285,14 @@ export class MicrositeBuilderAgent {
                 citations: contentData.citations,
                 lastReviewed: new Date()
               },
-              uxLayout: optimizedLayout,
+              uxLayout: optimizedLayout, // null for standalone pages
               schemaMarkup,
               readingTime,
               wordCount,
-              adZones: ['above-content', 'mid-content', 'below-content'],
+              adZones: standalonePageType ? [] : ['above-content', 'mid-content', 'below-content'], // No ads for standalone pages
               qualityScore: qualityCheck.score,
-              intent,
-              monetizationMode
+              intent: standalonePageType ? 'informational' : intent, // Standalone pages are informational
+              monetizationMode: standalonePageType ? 'none' : monetizationMode // No monetization for standalone pages
             });
 
             // Mark keyword as created in cluster (if it's a supporting keyword)
@@ -275,30 +302,34 @@ export class MicrositeBuilderAgent {
               console.warn(`⚠️  Could not mark keyword in cluster: ${clusterError.message}`);
             }
 
-            // Generate thumbnail for the page (non-blocking)
-            try {
-              // Use page.categoryKey if available, otherwise null
-              const categoryName = page.categoryKey 
-                ? page.categoryKey.charAt(0).toUpperCase() + page.categoryKey.slice(1)
-                : null;
-              
-              const thumbnail = await ThumbnailService.generateThumbnailWithRetry(
-                page,
-                tenant,
-                categoryName
-              );
+            // Generate thumbnail for the page (non-blocking, skip if skipImages is true)
+            if (!skipImages) {
+              try {
+                // Use page.categoryKey if available, otherwise null
+                const categoryName = page.categoryKey 
+                  ? page.categoryKey.charAt(0).toUpperCase() + page.categoryKey.slice(1)
+                  : null;
+                
+                const thumbnail = await ThumbnailService.generateThumbnailWithRetry(
+                  page,
+                  tenant,
+                  categoryName
+                );
 
-              if (thumbnail) {
-                // Update page with thumbnail
-                page.thumbnail = thumbnail;
-                await page.save();
-                console.log(`✅ Thumbnail generated and saved for: ${page.title}`);
-              } else {
-                console.warn(`⚠️  Thumbnail generation failed for: ${page.title} (page still created)`);
+                if (thumbnail) {
+                  // Update page with thumbnail
+                  page.thumbnail = thumbnail;
+                  await page.save();
+                  console.log(`✅ Thumbnail generated and saved for: ${page.title}`);
+                } else {
+                  console.warn(`⚠️  Thumbnail generation failed for: ${page.title} (page still created)`);
+                }
+              } catch (thumbnailError) {
+                // Don't block page creation if thumbnail fails
+                console.warn(`⚠️  Thumbnail generation error (non-blocking): ${thumbnailError.message}`);
               }
-            } catch (thumbnailError) {
-              // Don't block page creation if thumbnail fails
-              console.warn(`⚠️  Thumbnail generation error (non-blocking): ${thumbnailError.message}`);
+            } else {
+              console.log(`⏭️  Skipping thumbnail generation for: ${topic}`);
             }
 
             results.pages.push({ ...page.toObject(), action: 'created' });
@@ -367,7 +398,8 @@ export class MicrositeBuilderAgent {
    * Generate long-form content with E-E-A-T principles (Experience, Expertise, Authoritativeness, Trustworthiness)
    * Optimized for AdSense approval and SEO
    */
-  static async generateContentWithEAT(topic, keywords, tenant) {
+  static async generateContentWithEAT(topic, keywords, tenant, options = {}) {
+    const { standalonePageType = null } = options;
     const startTime = Date.now();
     const { generateText } = await import('../services/AIProviderService.js');
 
@@ -402,7 +434,88 @@ export class MicrositeBuilderAgent {
       complianceWarnings += `\n- If discussing legal topics, include appropriate disclaimers`;
     }
 
-    const prompt = `Write a comprehensive, SEO-optimized article about "${topic}" that meets Google's E-E-A-T standards (Experience, Expertise, Authoritativeness, Trustworthiness).
+    // Generate different prompts for standalone pages vs regular content
+    let prompt;
+    
+    if (standalonePageType) {
+      // Standalone page prompts (site notice pages)
+      const pageTypeMap = {
+        'privacy-policy': {
+          title: 'Privacy Policy',
+          description: 'a comprehensive Privacy Policy page',
+          instruction: `Write a professional Privacy Policy page for ${brandName}. This should explain how ${brandName} collects, uses, stores, and protects user data. Include sections on data collection, cookies, user rights, third-party services, data security, and contact information for privacy inquiries.`
+        },
+        'about-us': {
+          title: 'About Us',
+          description: 'an About Us page',
+          instruction: `Write an engaging About Us page for ${brandName}. This should explain who ${brandName} is, what we do, our mission, values, and what makes us unique. Make it personal and authentic, helping visitors understand our story and connect with our brand.`
+        },
+        'contact': {
+          title: 'Contact',
+          description: 'a Contact page',
+          instruction: `Write a Contact page for ${brandName}. This should provide clear ways for visitors to get in touch, including contact information, a contact form description, business hours (if applicable), and any other relevant contact methods. Make it easy for visitors to reach out.`
+        },
+        'cookie-disclosure': {
+          title: 'Cookie and Advertising Disclosure',
+          description: 'a Cookie and Advertising Disclosure page',
+          instruction: `Write a Cookie and Advertising Disclosure page for ${brandName}. This should explain what cookies are used on the site, how they're used, what third-party advertising services are used (like Google AdSense), and how users can manage their cookie preferences. Include information about data collection for advertising purposes.`
+        }
+      };
+      
+      const pageInfo = pageTypeMap[standalonePageType] || pageTypeMap['privacy-policy'];
+      
+      prompt = `${pageInfo.instruction}
+
+This is ${pageInfo.description} for the website ${brandName}${tagline ? ` (${tagline})` : ''}.
+
+BRAND IDENTITY:
+- Brand: ${brandName}${tagline ? ` - ${tagline}` : ''}
+- Tone: ${tone}
+- Language: ${language}
+- Write in a ${tone}, professional tone that matches this brand's voice.
+
+COMPLIANCE RULES (CRITICAL - MUST FOLLOW):${complianceWarnings}
+
+REQUIREMENTS:
+1. Content Quality:
+   - Write clear, professional, and comprehensive content (aim for 800-1200 words)
+   - Use a professional but ${tone} tone
+   - Well-structured with clear H2 headings for main sections
+   - Each section should be informative and easy to understand
+   - Use H3 subheadings for detailed points
+   - Include bullet points and lists where appropriate for clarity
+
+2. Content Structure:
+   - Start with a brief introduction explaining what this page is about
+   - Use clear H2 headings for main sections
+   - Each section should cover a specific aspect of the topic
+   - Include all relevant information that visitors would expect
+   - End with contact information or next steps if applicable
+
+3. Formatting:
+   - Use HTML tags: <h2> for main headings, <h3> for subheadings
+   - Use <ul> and <ol> for lists
+   - Use <strong> for emphasis
+   - Use <p> for paragraphs
+   - Keep paragraphs concise (3-5 sentences)
+   - DO NOT use markdown code blocks. Write pure HTML directly.
+   - DO NOT wrap HTML in code blocks or markdown syntax. Write HTML tags directly in your response.
+
+4. Legal/Compliance Considerations:
+   - For Privacy Policy: Include all required privacy disclosures based on GDPR, CCPA, and other applicable regulations
+   - For Cookie Disclosure: Clearly explain cookie usage and user rights
+   - For Contact: Ensure all contact information is accurate and accessible
+   - For About Us: Keep content authentic and truthful
+
+IMPORTANT: 
+- This is a site notice page, not a blog article. Write it from the perspective of ${brandName} explaining our policies, information, or contact details to visitors. Use "we", "our", and "us" to refer to ${brandName}.
+- Write the content as pure HTML. Do NOT use markdown syntax, code blocks, or any markdown formatting. Write HTML directly.
+- The content will be inserted directly into a webpage, so it must be valid HTML without any markdown formatting.
+
+Write the ${pageInfo.title} page now as pure HTML (no markdown, no code blocks), ensuring it's comprehensive, professional, and provides all necessary information for visitors.`;
+    } else {
+      // Regular content article prompt
+      prompt = `Write a comprehensive, SEO-optimized article about "${topic}" that meets Google's E-E-A-T standards (Experience, Expertise, Authoritativeness, Trustworthiness).
 
 CRITICAL WORD COUNT REQUIREMENT: The article MUST be AT LEAST 1000 words (minimum). Target 1500-2000 words for optimal SEO and authority. Do NOT create articles shorter than 1000 words. Count your words and ensure you meet this requirement.
 
@@ -498,6 +611,7 @@ FINAL REMINDER:
 - Structure: Introduction → Main sections (4-6 H2s) → FAQ section (5 Q&As) → Conclusion
 
 Write the article now, ensuring it's comprehensive, valuable, includes the mandatory FAQ section, is at least 1000 words, and optimized for both search engines and human readers.`;
+    }
 
     const content = await generateText({
       messages: [
@@ -506,7 +620,13 @@ Write the article now, ensuring it's comprehensive, valuable, includes the manda
           content: prompt
         }
       ],
-      systemPrompt: `You are an expert content writer specializing in SEO-optimized, E-E-A-T compliant articles. 
+      systemPrompt: standalonePageType 
+        ? `You are an expert writer specializing in creating professional site notice pages (Privacy Policy, About Us, Contact, Cookie Disclosure) for websites.
+You write clear, comprehensive, and legally compliant pages that inform visitors about the website's policies, information, and contact details.
+You write in a professional but approachable tone that matches the brand's voice.
+You always write original, accurate content that provides all necessary information visitors would expect.
+CRITICAL: Write content as pure HTML. Do NOT use markdown syntax, code blocks, or any markdown formatting. Write HTML tags directly.`
+        : `You are an expert content writer specializing in SEO-optimized, E-E-A-T compliant articles. 
 You write comprehensive, well-researched content that demonstrates expertise, experience, authoritativeness, and trustworthiness.
 Your articles are optimized for Google AdSense approval and search engine visibility.
 You always write original, valuable content that provides real value to readers.
@@ -515,8 +635,18 @@ CRITICAL: Every article you write MUST be at least 1000 words. Write substantial
       maxTokens: 8000
     });
 
+    // Clean content: Remove markdown code blocks if present (especially for standalone pages)
+    let cleanedContent = content;
+    // Remove markdown code blocks (```html ... ``` or ``` ... ```)
+    cleanedContent = cleanedContent.replace(/```html\s*([\s\S]*?)```/gi, '$1');
+    cleanedContent = cleanedContent.replace(/```\s*([\s\S]*?)```/gi, '$1');
+    // Remove any remaining markdown formatting that might have slipped through
+    cleanedContent = cleanedContent.replace(/^```/gm, '').replace(/```$/gm, '');
+    // Trim any extra whitespace
+    cleanedContent = cleanedContent.trim();
+
     // Extract meta information
-    const metaDescription = this.extractMetaDescription(content);
+    const metaDescription = this.extractMetaDescription(cleanedContent);
     const metaTitle = this.generateMetaTitle(topic, keywords);
     const author = {
       name: tenant.name || 'Content Team',
@@ -525,10 +655,10 @@ CRITICAL: Every article you write MUST be at least 1000 words. Write substantial
     };
 
     // Extract citations (in a real scenario, AI could suggest sources)
-    const citations = this.extractCitations(content);
+    const citations = this.extractCitations(cleanedContent);
 
     return {
-      content,
+      content: cleanedContent, // Use cleaned content (markdown code blocks removed)
       metaTitle,
       metaDescription,
       author,

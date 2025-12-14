@@ -36,14 +36,14 @@
   margin: 0 auto;
   padding: 0 var(--spacing-md, 1.5rem);
   display: grid;
-  grid-template-columns: 1fr;
+  /*grid-template-columns: 1fr;*/
   gap: var(--spacing-2xl, 4rem);
 }
 
 @media (min-width: 1024px) {
-  .articleLayout {
+  /*.articleLayout {
     grid-template-columns: 1fr 240px;
-  }
+  }*/
 }
 
 .articleMain {
@@ -286,7 +286,7 @@
 
 @media (min-width: 1024px) {
   .tableOfContents {
-    display: block;
+    display: none;
     position: sticky;
     top: calc(var(--header-height, 64px) + var(--spacing-md, 1.5rem));
     align-self: start;

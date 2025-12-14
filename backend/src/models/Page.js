@@ -56,6 +56,17 @@ const pageSchema = new mongoose.Schema({
     default: false,
     index: true
   },
+  isStandalone: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  standalonePageType: {
+    type: String,
+    enum: ['privacy-policy', 'about-us', 'contact', 'cookie-disclosure', null],
+    default: null,
+    trim: true
+  },
   content: {
     type: String,
     required: true
@@ -98,7 +109,7 @@ const pageSchema = new mongoose.Schema({
   },
   monetizationMode: {
     type: String,
-    enum: ['adsense', 'affiliate', 'lead', 'mixed'],
+    enum: ['adsense', 'affiliate', 'lead', 'mixed', 'none'],
     default: 'adsense'
   },
   // Pillar-based generation fields
