@@ -107,7 +107,7 @@ export class PageService {
       tenantId,
       isStandalone: { $ne: true } // Exclude standalone pages
     })
-      .select('_id slug title meta categoryKey readingTime wordCount thumbnail updatedAt isStandalone')
+      .select('_id slug title meta categoryKey readingTime wordCount thumbnail updatedAt isStandalone isHome')
       .sort({ updatedAt: -1 }); // Newest first
     
     return {
@@ -125,7 +125,8 @@ export class PageService {
           wordCount: page.wordCount || null,
           thumbnail: page.thumbnail || null,
           updatedAt: page.updatedAt,
-          isStandalone: page.isStandalone || false // Include for frontend filtering
+          isStandalone: page.isStandalone || false, // Include for frontend filtering
+          isHome: page.isHome || false // Include for sitemap generation
         }))
     };
   }

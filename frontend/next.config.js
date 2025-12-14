@@ -20,6 +20,15 @@ const nextConfig = {
       },
     ],
   },
+  // Rewrites for sitemap.xml
+  async rewrites() {
+    return [
+      {
+        source: '/sitemap.xml',
+        destination: '/sitemap',
+      },
+    ];
+  },
   // Headers for multi-tenant support
   async headers() {
     return [
