@@ -494,6 +494,45 @@ async function runPillarGeneration() {
 
     const tenantId = tenant._id.toString();
 
+    // STEP 1: Generate logo if it doesn't exist (unless --gen-logo flag is set, which handles it separately)
+    if (!genLogo && !tenant.logo && process.env.GEMINI_API_KEY) {
+      console.log(`\n🎨 STEP 1: Checking tenant logo...`);
+      console.log('='.repeat(70));
+      console.log(`📋 Tenant: ${tenant.name} (${tenant.domain})`);
+      console.log(`   Logo: ${tenant.logo || 'Not set'}`);
+      
+      try {
+        console.log(`\n🎨 Generating logo for tenant...`);
+        const logoUrl = await LogoService.generateLogoWithRetry(tenant, 2);
+        
+        if (logoUrl) {
+          // Update tenant with generated logo
+          const updatedTenant = await TenantService.getTenantById(tenantId);
+          if (updatedTenant) {
+            updatedTenant.logo = logoUrl;
+            await updatedTenant.save();
+            console.log(`✅ Logo generated and saved successfully!`);
+            console.log(`   Logo URL: ${logoUrl}`);
+            // Update tenant variable for subsequent use
+            tenant.logo = logoUrl;
+          } else {
+            console.warn(`⚠️  Could not update tenant with logo`);
+          }
+        } else {
+          console.warn(`⚠️  Failed to generate logo (will continue without logo)`);
+        }
+      } catch (error) {
+        console.warn(`⚠️  Error generating logo (non-blocking):`, error.message);
+        console.log(`   Continuing with pillar generation...`);
+      }
+      console.log('='.repeat(70) + '\n');
+    } else if (!tenant.logo && !process.env.GEMINI_API_KEY) {
+      console.log(`\n⚠️  Tenant has no logo and GEMINI_API_KEY is not set`);
+      console.log(`   Skipping logo generation. Set GEMINI_API_KEY to auto-generate logos.\n`);
+    } else if (tenant.logo) {
+      console.log(`\n✅ Tenant already has a logo: ${tenant.logo}\n`);
+    }
+
     // Handle --gen-logo mode: generate logo only
     if (genLogo) {
       console.log(`\n🎨 LOGO GENERATION MODE: Generating logo for tenant`);

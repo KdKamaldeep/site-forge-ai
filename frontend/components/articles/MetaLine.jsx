@@ -14,6 +14,7 @@ export default function MetaLine({
   categoryKey = null,
   categoryDescription = null 
 }) {
+  // Always prefer updatedAt over publishedAt (updatedAt is the last modified date)
   const date = updatedAt || publishedAt;
   const formattedDate = date 
     ? new Date(date).toLocaleDateString('en-US', { 

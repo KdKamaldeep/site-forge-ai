@@ -24,7 +24,7 @@ export class PageService {
     const page = await Page.findOne({ 
       tenantId, 
       slug: slug.toLowerCase().trim() 
-    }).select('_id title slug meta content uxLayout schemaMarkup readingTime wordCount intent monetizationMode categoryKey primaryKeyword thumbnail updatedAt');
+    }).select('_id title slug meta content uxLayout schemaMarkup readingTime wordCount intent monetizationMode categoryKey primaryKeyword thumbnail updatedAt createdAt');
     
     if (!page) {
       return null;
@@ -53,7 +53,8 @@ export class PageService {
       categoryKey: page.categoryKey || null,
       primaryKeyword: page.primaryKeyword || null,
       thumbnail: page.thumbnail || null,
-      updatedAt: page.updatedAt
+      updatedAt: page.updatedAt || page.createdAt || null, // Use updatedAt, fallback to createdAt
+      publishedAt: page.createdAt || page.updatedAt || null // publishedAt maps to createdAt (original publish date)
     };
   }
 
@@ -87,7 +88,8 @@ export class PageService {
       readingTime: page.readingTime || null,
       wordCount: page.wordCount || null,
       thumbnail: page.thumbnail || null,
-      updatedAt: page.updatedAt
+      updatedAt: page.updatedAt || page.createdAt || null, // Use updatedAt, fallback to createdAt
+      publishedAt: page.createdAt || page.updatedAt || null // publishedAt maps to createdAt (original publish date)
     };
   }
 
@@ -153,7 +155,13 @@ export class PageService {
    * Get all pages for a tenant (for sitemap/internal linking)
    */
   static async getAllPagesForTenant(tenantId) {
-    return await Page.find({ tenantId }).select('_id title slug content meta categoryKey primaryKeyword intent monetizationMode readingTime wordCount updatedAt createdAt');
+    const pages = await Page.find({ tenantId }).select('_id title slug content meta categoryKey primaryKeyword intent monetizationMode readingTime wordCount updatedAt createdAt').lean();
+    
+    // Map to include publishedAt (from createdAt) for frontend compatibility
+    return pages.map(page => ({
+      ...page,
+      publishedAt: page.createdAt || page.updatedAt || null // publishedAt maps to createdAt
+    }));
   }
 }
 

@@ -84,6 +84,7 @@ export interface Page {
   categoryKey?: string;
   primaryKeyword?: string;
   updatedAt?: string;
+  publishedAt?: string;
 }
 
 export interface KeywordCluster {
