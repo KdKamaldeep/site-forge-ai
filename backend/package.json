@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "seed": "node scripts/seed.js",
     "agent": "node scripts/run-agent.js",
-    "test:gemini-image": "node src/services/__tests__/GeminiImageService.test.js"
+    "test:gemini-image": "node src/services/__tests__/GeminiImageService.test.js",
+    "test:microsite-agent": "node src/agents/__tests__/micrositeBuilderAgent.test.js"
   },
   "keywords": [
     "cms",

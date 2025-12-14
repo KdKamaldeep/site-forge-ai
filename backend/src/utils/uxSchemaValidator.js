@@ -10,7 +10,8 @@ const VALID_SECTION_TYPES = [
   'cta',
   'imageBlock',
   'featureList',
-  'comparisonTable'
+  'comparisonTable',
+  'faq'
 ];
 
 const VALID_LAYOUTS = [
@@ -83,6 +84,20 @@ export function validateUXLayout(uxLayout) {
           }
           if (!section.rows || !Array.isArray(section.rows)) {
             errors.push(`Section ${index} (comparisonTable): rows array is required`);
+          }
+          break;
+        case 'faq':
+          if (!section.items || !Array.isArray(section.items)) {
+            errors.push(`Section ${index} (faq): items array is required`);
+          } else {
+            section.items.forEach((item, itemIndex) => {
+              if (!item.question) {
+                errors.push(`Section ${index} (faq), item ${itemIndex}: question is required`);
+              }
+              if (!item.answer) {
+                errors.push(`Section ${index} (faq), item ${itemIndex}: answer is required`);
+              }
+            });
           }
           break;
       }

@@ -1,8 +1,8 @@
 /**
- * Seed script for SmartHomeBasics tenant
+ * Seed script for SmartHomeTricks tenant (NEW)
  * Creates a tenant with complete Site DNA configuration
  *
- * Usage: node scripts/seed-SmartHomeBasics.js
+ * Usage: node scripts/seed-SmartHomeTricks.js
  */
 
 import dotenv from 'dotenv';
@@ -14,13 +14,13 @@ dotenv.config();
 const MONGODB_URI =
   process.env.MONGODB_URI || 'mongodb://localhost:27017/microsite-empire';
 
-async function seedSmartHomeBasics() {
+async function seedSmartHomeTricks() {
   try {
     // Connect to MongoDB
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
-    const DOMAIN = 'SmartHomeBasics.com';
+    const DOMAIN = 'SmartHomeTricks.com';
 
     // Check if tenant already exists
     const existingTenant = await Tenant.findOne({ domain: DOMAIN });
@@ -32,14 +32,14 @@ async function seedSmartHomeBasics() {
 
     // Prepare tenant data
     const tenantData = {
-      name: 'SmartHomeBasics',
+      name: 'SmartHomeTricks',
       domain: DOMAIN,
       logo: `https://${DOMAIN}/logo.png`,
       layoutStyle: null, // Use default/auto behavior
       theme: {
         colors: {
-          primary: '#0F172A',     // slate-900
-          secondary: '#06B6D4',   // cyan-500
+          primary: '#0B1220',     // deep slate
+          secondary: '#22C55E',   // green-500
           text: '#0B1220',
           background: '#FFFFFF',
           accent: '#F97316'       // orange-500
@@ -53,8 +53,8 @@ async function seedSmartHomeBasics() {
 
       // Brand Identity
       brandIdentity: {
-        brandName: 'Smart Home Basics',
-        tagline: 'Simple guides for smarter homes',
+        brandName: 'Smart Home Tricks',
+        tagline: 'Quick fixes, smarter living',
         language: 'en',
         country: 'Global',
         region: '',
@@ -63,76 +63,78 @@ async function seedSmartHomeBasics() {
 
       // Navigation
       navigation: [
-        { label: 'Home Maintenance', path: '/home-maintenance', categoryKey: 'home-maintenance', icon: '', order: 0 },
-        { label: 'Appliances',       path: '/appliances',       categoryKey: 'appliances',       icon: '', order: 1 },
-        { label: 'Energy Saving',    path: '/energy-saving',    categoryKey: 'energy-saving',    icon: '', order: 2 },
-        { label: 'Safety Basics',    path: '/safety-basics',    categoryKey: 'safety-basics',    icon: '', order: 3 },
+        { label: 'Smart Devices',    path: '/smart-devices',    categoryKey: 'smart-devices',    icon: '', order: 0 },
+        { label: 'DIY & Fixes',      path: '/diy-fixes',        categoryKey: 'diy-fixes',        icon: '', order: 1 },
+        { label: 'Energy & Bills',   path: '/energy-bills',     categoryKey: 'energy-bills',     icon: '', order: 2 },
+        { label: 'Home Safety',      path: '/home-safety',      categoryKey: 'home-safety',      icon: '', order: 3 },
         { label: 'How It Works',     path: '/how-it-works',     categoryKey: 'how-it-works',     icon: '', order: 4 }
       ],
 
       // Content Pillars
       contentPillars: [
         {
-          categoryKey: 'home-maintenance',
-          description: 'Simple home upkeep guides, checklists, and common fixes for everyday homeowners/renters.',
+          categoryKey: 'smart-devices',
+          description: 'Beginner-friendly guides for smart plugs, lights, sensors, routers, and setup tips.',
           seedKeywords: [
-            'home maintenance checklist',
-            'seasonal home care',
-            'preventive maintenance tips',
-            'mold prevention at home',
-            'water leakage basics',
-            'wall dampness causes',
-            'paint peeling reasons',
-            'basic DIY home care',
-            'home inspection tips'
+            'best smart plugs for beginners',
+            'smart light setup guide',
+            'wifi extender placement tips',
+            'smart door sensor installation',
+            'how to automate lights at home',
+            'smart thermostat basics',
+            'zigbee vs wifi devices',
+            'smart home hub for beginners',
+            'how to name devices in smart home'
           ],
           monetizationMode: 'adsense',
           postingRatePerWeek: 2
         },
         {
-          categoryKey: 'appliances',
-          description: 'Practical appliance guides: usage tips, cleaning, troubleshooting basics, and buying decisions.',
+          categoryKey: 'diy-fixes',
+          description: 'Simple home DIY fixes and maintenance tricks (safe, basic, no risky electrical work).',
           seedKeywords: [
-            'how to clean washing machine',
-            'refrigerator maintenance',
-            'ac servicing basics',
-            'inverter vs non inverter',
-            'microwave safety tips',
-            'water purifier maintenance',
-            'appliance troubleshooting',
-            'best practices for appliances'
+            'fix squeaky door quick',
+            'remove mold from bathroom safely',
+            'stop water tap leaking basics',
+            'clean shower drain at home',
+            'how to unclog sink without chemicals',
+            'remove bad smell from kitchen drain',
+            'how to seal window gaps',
+            'reduce dust at home tips',
+            'clean ceiling fan without mess'
           ],
           monetizationMode: 'adsense',
           postingRatePerWeek: 2
         },
         {
-          categoryKey: 'energy-saving',
-          description: 'Easy ways to reduce energy bills with practical comparisons and habits (no promises).',
+          categoryKey: 'energy-bills',
+          description: 'Practical habits and comparisons to reduce power use without unrealistic promises.',
           seedKeywords: [
-            'save electricity at home',
-            'reduce power bill',
-            'energy efficient appliances',
-            'led vs cfl comparison',
-            'ac temperature best setting',
-            'inverter savings explained',
-            'standby power usage',
-            'home energy audit basics'
+            'ac temperature setting for savings',
+            'reduce electricity bill in summer',
+            'standby power consumption explained',
+            'smart plug energy monitoring',
+            'led vs tube light power usage',
+            'how to use ceiling fan efficiently',
+            'refrigerator power saving tips',
+            'best time to run washing machine',
+            'home energy audit checklist'
           ],
           monetizationMode: 'adsense',
           postingRatePerWeek: 2
         },
         {
-          categoryKey: 'safety-basics',
-          description: 'Home safety basics: electrical, gas, fire prevention, and simple precautions.',
+          categoryKey: 'home-safety',
+          description: 'Home safety basics: fire safety, gas safety, electrical precautions (non-professional advice).',
           seedKeywords: [
-            'electrical safety at home',
-            'short circuit prevention',
-            'gas leakage safety',
-            'fire safety checklist home',
-            'childproofing home basics',
-            'bathroom safety tips',
-            'kitchen safety habits',
-            'extension cord safety'
+            'smoke detector placement home',
+            'gas leakage safety steps',
+            'extension cord safety tips',
+            'prevent electric shock at home',
+            'kitchen fire safety checklist',
+            'childproofing home tips',
+            'bathroom anti slip safety',
+            'how to store cleaning chemicals safely'
           ],
           monetizationMode: 'adsense',
           postingRatePerWeek: 1
@@ -141,12 +143,12 @@ async function seedSmartHomeBasics() {
           categoryKey: 'how-it-works',
           description: 'Simple explanations of how common home systems and appliances work.',
           seedKeywords: [
-            'how inverter works',
-            'how refrigerator works',
-            'how water heater works',
-            'how air conditioner works',
-            'how water purifier works',
             'how circuit breaker works',
+            'how inverter works at home',
+            'how water purifier works',
+            'how refrigerator cooling works',
+            'how air conditioner works',
+            'how geyser water heater works',
             'how solar panels work basics'
           ],
           monetizationMode: 'adsense',
@@ -196,7 +198,7 @@ async function seedSmartHomeBasics() {
     const tenant = new Tenant(tenantData);
     await tenant.save();
 
-    console.log('✅ SmartHomeBasics tenant created successfully!');
+    console.log('✅ SmartHomeTricks tenant created successfully!');
     console.log(`   Tenant ID: ${tenant._id}`);
     console.log(`   Domain: ${tenant.domain}`);
     console.log(`   Name: ${tenant.name}`);
@@ -228,4 +230,4 @@ async function seedSmartHomeBasics() {
 }
 
 // Run the seed
-seedSmartHomeBasics();
+seedSmartHomeTricks();

@@ -402,7 +402,9 @@ export class MicrositeBuilderAgent {
       complianceWarnings += `\n- If discussing legal topics, include appropriate disclaimers`;
     }
 
-    const prompt = `Write a comprehensive, SEO-optimized article about "${topic}" (1500-2500 words) that meets Google's E-E-A-T standards (Experience, Expertise, Authoritativeness, Trustworthiness).
+    const prompt = `Write a comprehensive, SEO-optimized article about "${topic}" that meets Google's E-E-A-T standards (Experience, Expertise, Authoritativeness, Trustworthiness).
+
+CRITICAL WORD COUNT REQUIREMENT: The article MUST be AT LEAST 1000 words (minimum). Target 1500-2000 words for optimal SEO and authority. Do NOT create articles shorter than 1000 words. Count your words and ensure you meet this requirement.
 
 BRAND IDENTITY:
 - Brand: ${brandName}${tagline ? ` - ${tagline}` : ''}
@@ -412,19 +414,22 @@ BRAND IDENTITY:
 
 COMPLIANCE RULES (CRITICAL - MUST FOLLOW):${complianceWarnings}
 
-IMPORTANT: Include 3-5 image placeholders in your HTML content using this format:
+IMPORTANT: Include 3 image placeholders in your HTML content using this format:
 <img data-image-placeholder="true" data-prompt="detailed image description here" alt="descriptive alt text" />
 
 Place images:
 - After the introduction (first image)
-- After each major H2 section (2-3 images)
+- After a major H2 section (second image)
 - Before the conclusion (final image)
 
 Each image should be relevant to the content around it.
 
 REQUIREMENTS:
-1. Content Quality:
-   - Minimum 1500 words, target 2000+ words for authority
+1. Content Quality (CRITICAL):
+   - ABSOLUTE MINIMUM: 1000 words (required, no exceptions)
+   - TARGET: 1500-2000 words for optimal SEO and authority
+   - Write substantial, detailed content - do not use filler or repetition
+   - Each section must contain meaningful, valuable information
    - Well-researched, factual, and up-to-date information
    - Clear structure with H2/H3 headings
    - Answer-first format (direct answer in first paragraph)
@@ -444,34 +449,55 @@ REQUIREMENTS:
    - Establish trustworthiness with clear sourcing and citations
 
 4. Content Structure:
-   - Start with a direct answer to the main question
-   - Use clear H2 headings for main sections
-   - Include H3 subheadings for detailed points
+   - Start with a direct answer to the main question (100-150 words)
+   - Use clear H2 headings for main sections (aim for 4-6 main sections)
+   - Each H2 section should be 200-400 words with substantial detail
+   - Include H3 subheadings for detailed points (100-200 words each)
    - Add bullet points and numbered lists for scannability
-   - Include a conclusion that summarizes key points
+   - Include a conclusion that summarizes key points (150-200 words)
+   - MANDATORY: Include an FAQ section with 5 questions and answers (see details below)
+   - Ensure total word count reaches AT LEAST 1000 words across all sections
 
-5. Engagement Elements:
+5. FAQ Section (MANDATORY):
+   - Include an FAQ section with exactly 5 questions and detailed answers
+   - Use H2 heading: <h2>Frequently Asked Questions</h2>
+   - Each FAQ item should follow this format:
+     <h3>Question here?</h3>
+     <p>Detailed answer here (100-150 words per answer). Provide comprehensive, helpful answers that address the question thoroughly.</p>
+   - Questions should be relevant to the topic and things readers commonly ask
+   - Answers should be substantial (100-150 words each) with detailed explanations
+   - Total FAQ section should add approximately 500-750 words to the article
+   - Place FAQ section before the conclusion
+
+6. Engagement Elements:
    - Engaging introduction that hooks the reader
    - Practical examples and case studies
    - Actionable tips and advice
    - Visual content suggestions (describe images that would enhance the content)
    - Internal linking opportunities (mention related topics)
 
-6. AdSense Optimization:
+7. AdSense Optimization:
    - Content-first approach (valuable content before ads)
    - Natural content flow that keeps readers engaged
    - Clear value proposition
    - High-quality, original content
 
-7. Formatting:
+8. Formatting:
    - Use HTML tags: <h2> for main headings, <h3> for subheadings
    - Use <ul> and <ol> for lists
    - Use <strong> for emphasis
    - Use <p> for paragraphs
-   - Include at least 3-5 headings
-   - Include at least 2-3 lists
+   - Include at least 4-6 H2 headings to support substantial content
+   - Include at least 3-5 lists with detailed explanations
+   - Each paragraph should be 3-5 sentences with detailed information
 
-Write the article now, ensuring it's comprehensive, valuable, and optimized for both search engines and human readers.`;
+FINAL REMINDER: 
+- Your article MUST be at least 1000 words total. Count your words. 
+- The FAQ section with 5 questions and answers is MANDATORY and will add 500-750 words.
+- Write comprehensive, detailed sections with substantial information. Short articles will be rejected.
+- Structure: Introduction → Main sections (4-6 H2s) → FAQ section (5 Q&As) → Conclusion
+
+Write the article now, ensuring it's comprehensive, valuable, includes the mandatory FAQ section, is at least 1000 words, and optimized for both search engines and human readers.`;
 
     const content = await generateText({
       messages: [
@@ -483,9 +509,10 @@ Write the article now, ensuring it's comprehensive, valuable, and optimized for 
       systemPrompt: `You are an expert content writer specializing in SEO-optimized, E-E-A-T compliant articles. 
 You write comprehensive, well-researched content that demonstrates expertise, experience, authoritativeness, and trustworthiness.
 Your articles are optimized for Google AdSense approval and search engine visibility.
-You always write original, valuable content that provides real value to readers.`,
+You always write original, valuable content that provides real value to readers.
+CRITICAL: Every article you write MUST be at least 1000 words. Write substantial, detailed content with meaningful information. Short articles are not acceptable.`,
       temperature: 0.7,
-      maxTokens: 4000
+      maxTokens: 8000
     });
 
     // Extract meta information

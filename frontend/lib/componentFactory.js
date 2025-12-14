@@ -11,6 +11,7 @@ import CTA from '@/components/ux/CTA';
 import ImageBlock from '@/components/ux/ImageBlock';
 import FeatureList from '@/components/ux/FeatureList';
 import ComparisonTable from '@/components/ux/ComparisonTable';
+import FAQ from '@/components/ux/FAQ';
 
 // Component mapping
 const componentMap = {
@@ -22,6 +23,7 @@ const componentMap = {
   imageBlock: ImageBlock,
   featureList: FeatureList,
   comparisonTable: ComparisonTable,
+  faq: FAQ,
 };
 
 /**

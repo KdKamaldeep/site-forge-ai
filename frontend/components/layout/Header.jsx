@@ -43,10 +43,11 @@ export default function Header({ navigation, tenant }) {
       <div className={styles.headerWrapper}>
         <div className={styles.headerContent}>
           {/* Left: Logo */}
-          <Link href="/" className={styles.headerLogo}>
+          {/*<Link href="/" className={styles.headerLogo}>
             {logo && (
               <img src={logo} alt={brandName} className={styles.logoImage} />
-            )}
+            )}*/}
+            <Link href="/" className={styles.headerLogo}>
             <span className={styles.logoText}>{formattedBrandName}</span>
           </Link>
 

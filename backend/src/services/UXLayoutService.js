@@ -56,6 +56,7 @@ Available section types (use EXACTLY these type names):
 6. imageBlock: { type: "imageBlock", image: string, caption?: string }
 7. featureList: { type: "featureList", items: Array<{title: string, description: string}> }
 8. comparisonTable: { type: "comparisonTable", headers: string[], rows: Array<Array<string>> }
+9. faq: { type: "faq", title?: string, items: Array<{question: string, answer: string}> }
 
 Content to convert:
 ${content.substring(0, 3000)}
@@ -77,10 +78,20 @@ IMPORTANT RULES:
 - Use "imageBlock" every 500-700 words for visual engagement
 - Use "featureList" for benefits, features, or key points
 - Use "comparisonTable" for comparisons or data tables
+- CRITICAL: If the content contains an FAQ section (with questions and answers), convert it to a "faq" section type with items array containing {question, answer} objects
 - Return ONLY valid JSON, no markdown code blocks, no explanations
 - The root object MUST have a "sections" array
-- Each section MUST have a "type" field matching one of the 8 types above
+- Each section MUST have a "type" field matching one of the 9 types above
 - Aim for 5-10 sections total for optimal engagement
+
+TEXT LENGTH REQUIREMENTS (CRITICAL):
+- "paragraph" sections: Each paragraph section MUST contain 150-300 words of substantial, informative text. Do NOT use short 1-2 sentence paragraphs. Write comprehensive, detailed paragraphs that fully explain concepts.
+- "grid" items: Each item in a grid MUST have a "text" field with at least 80-120 words describing the feature/item in detail. Include explanations, benefits, and examples.
+- "featureList" items: Each item's "description" field MUST be at least 100-150 words with detailed explanations, not just brief bullet points. Include examples, benefits, and practical applications.
+- "infoBox" sections: The "text" field MUST contain 100-200 words of substantial information, explanations, or tips. Do not use short one-sentence text.
+- "hero" subtitle: The subtitle should be 2-3 sentences (30-60 words) providing context and value proposition.
+
+Remember: Each section should contain substantial, valuable content that provides real information to readers. Short, minimal text is not acceptable.
 
 Example output format:
 {
@@ -105,9 +116,9 @@ Example output format:
             content: prompt
           }
         ],
-        systemPrompt: 'You are a UX designer. You MUST return ONLY valid JSON objects with the exact structure: { "sections": [...] }. Each section must have a "type" field matching: hero, paragraph, grid, infoBox, cta, imageBlock, featureList, or comparisonTable. Return ONLY JSON, no markdown, no explanations.',
+        systemPrompt: 'You are a UX designer and content writer. You MUST return ONLY valid JSON objects with the exact structure: { "sections": [...] }. Each section must have a "type" field matching: hero, paragraph, grid, infoBox, cta, imageBlock, featureList, comparisonTable, or faq. CRITICAL: If the content contains FAQ questions and answers (typically under "Frequently Asked Questions" heading), convert them to a "faq" section type with items array. All text fields (paragraph text, grid item text, featureList descriptions, infoBox text, faq answers) MUST contain substantial content (150-300 words for paragraphs, 80-120 words for grid items, 100-150 words for featureList descriptions, 100-200 words for infoBox, 100-150 words for each FAQ answer). Do not create short, minimal text. Return ONLY JSON, no markdown, no explanations.',
         temperature: 0.7,
-        maxTokens: 2500,
+        maxTokens: 6000,
         jsonMode: true
       });
       
