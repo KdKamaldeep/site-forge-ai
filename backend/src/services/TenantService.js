@@ -1,4 +1,5 @@
 import Tenant from '../models/Tenant.js';
+import { LogoService } from './LogoService.js';
 
 export class TenantService {
   /**
@@ -6,7 +7,25 @@ export class TenantService {
    */
   static async createTenant(data) {
     const tenant = new Tenant(data);
-    return await tenant.save();
+    const savedTenant = await tenant.save();
+    
+    // Auto-generate logo if not provided and GEMINI_API_KEY is available
+    if (!savedTenant.logo && process.env.GEMINI_API_KEY) {
+      try {
+        console.log(`🎨 Auto-generating logo for tenant: ${savedTenant.name}`);
+        const logoUrl = await LogoService.generateLogoWithRetry(savedTenant, 2);
+        if (logoUrl) {
+          savedTenant.logo = logoUrl;
+          await savedTenant.save();
+          console.log(`✅ Logo generated and saved for tenant: ${savedTenant.name}`);
+        }
+      } catch (error) {
+        console.warn(`⚠️  Failed to auto-generate logo for tenant ${savedTenant.name}:`, error.message);
+        // Continue without logo - tenant can set it manually later
+      }
+    }
+    
+    return savedTenant;
   }
 
   /**

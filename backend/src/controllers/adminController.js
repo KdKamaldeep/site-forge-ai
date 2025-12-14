@@ -332,7 +332,7 @@ export class AdminController {
         tenant.name = name;
         tenant.domain = domain;
         tenant.theme = theme;
-        tenant.logo = logo || null;
+        tenant.logo = logo || tenant.logo || null;
         tenant.layoutStyle = layoutStyle || null;
         tenant.googleAnalyticsId = googleAnalyticsId || null;
         tenant.adsenseId = adsenseId || null;
@@ -344,6 +344,23 @@ export class AdminController {
         tenant.compliance = compliance;
         tenant.publishingStrategy = publishingStrategy;
         await tenant.save();
+
+        // Auto-generate logo if not provided and GEMINI_API_KEY is available
+        if (!tenant.logo && process.env.GEMINI_API_KEY) {
+          try {
+            console.log(`🎨 Auto-generating logo for tenant: ${tenant.name}`);
+            const { LogoService } = await import('../services/LogoService.js');
+            const logoUrl = await LogoService.generateLogoWithRetry(tenant, 2);
+            if (logoUrl) {
+              tenant.logo = logoUrl;
+              await tenant.save();
+              console.log(`✅ Logo generated and saved for tenant: ${tenant.name}`);
+            }
+          } catch (error) {
+            console.warn(`⚠️  Failed to auto-generate logo for tenant ${tenant.name}:`, error.message);
+            // Continue without logo - tenant can set it manually later
+          }
+        }
 
         return res.redirect('/admin/tenants?success=Tenant+updated+successfully');
       }

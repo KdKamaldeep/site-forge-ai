@@ -78,8 +78,9 @@ export default async function DynamicPathPage({ params }) {
     if (pathArray.length === 1) {
       // Single segment: category landing page
       const categoryKey = pathArray[0];
+      console.log('categoryKey', categoryKey);
       const category = context.siteDNA?.categories?.find(c => c.categoryKey === categoryKey);
-      
+      console.log('category', category);
       if (!category) {
         // Not a category, try as article slug
         const page = await getPageBySlug(tenantId, categoryKey);
@@ -105,7 +106,7 @@ export default async function DynamicPathPage({ params }) {
       }
 
       const { pages } = await getCategoryLanding(tenantId, categoryKey);
-      
+      console.log('pages', pages);
       // Fetch popular posts and categories for sidebar
       const allPages = await listPages(tenantId);
       const popularPages = Array.isArray(allPages) ? allPages.slice(0, 4) : [];

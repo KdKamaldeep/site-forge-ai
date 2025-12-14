@@ -1,11 +1,13 @@
 import KeywordCluster from '../models/KeywordCluster.js';
 import { TenantService } from './TenantService.js';
 import { PageService } from './PageService.js';
+import { PillarService } from './PillarService.js';
 import { generateText } from './AIProviderService.js';
 
 export class KeywordClusterService {
   /**
    * Get or create current cluster for tenant
+   * Updated to use new activePillar system with categoryKey
    */
   static async getCurrentCluster(tenantId) {
     const tenant = await TenantService.getTenantById(tenantId);
@@ -13,31 +15,77 @@ export class KeywordClusterService {
       throw new Error('Tenant not found');
     }
 
-    // If tenant has no current pillar, create one
-    if (!tenant.currentPillar || !tenant.currentPillar.keyword) {
-      await this.initializePillar(tenantId);
-      // Reload tenant
-      const updatedTenant = await TenantService.getTenantById(tenantId);
-      return await this.getCurrentCluster(tenantId);
-    }
-
-    const pillarKeyword = tenant.currentPillar.keyword;
-    
-    // Find or create cluster
-    let cluster = await KeywordCluster.findOne({
-      tenantId,
-      pillarKeyword
-    });
-
-    if (!cluster) {
-      cluster = await KeywordCluster.create({
+    // Use new activePillar system (preferred)
+    if (tenant.activePillar && tenant.activePillar.categoryKey && tenant.activePillar.pillarKeyword) {
+      const categoryKey = tenant.activePillar.categoryKey;
+      const pillarKeyword = tenant.activePillar.pillarKeyword;
+      
+      // Find or create cluster with categoryKey
+      let cluster = await KeywordCluster.findOne({
         tenantId,
-        pillarKeyword,
-        supportingKeywords: []
+        categoryKey,
+        pillarKeyword
       });
+
+      if (!cluster) {
+        cluster = await KeywordCluster.create({
+          tenantId,
+          categoryKey,
+          pillarKeyword,
+          supportingTopics: []
+        });
+        console.log(`✅ Created new KeywordCluster for pillar: "${pillarKeyword}" (category: ${categoryKey})`);
+      }
+
+      return cluster;
     }
 
-    return cluster;
+    // Fallback to legacy currentPillar system (for backward compatibility)
+    if (tenant.currentPillar && tenant.currentPillar.keyword) {
+      const pillarKeyword = tenant.currentPillar.keyword;
+      
+      // Try to infer categoryKey from contentPillars or use a default
+      let categoryKey = 'general';
+      if (tenant.contentPillars && tenant.contentPillars.length > 0) {
+        // Use first category as fallback
+        categoryKey = tenant.contentPillars[0].categoryKey || 'general';
+      }
+      
+      // Find or create cluster
+      let cluster = await KeywordCluster.findOne({
+        tenantId,
+        categoryKey,
+        pillarKeyword
+      });
+
+      if (!cluster) {
+        cluster = await KeywordCluster.create({
+          tenantId,
+          categoryKey,
+          pillarKeyword,
+          supportingTopics: []
+        });
+        console.log(`✅ Created KeywordCluster (legacy) for pillar: "${pillarKeyword}" (category: ${categoryKey})`);
+      }
+
+      return cluster;
+    }
+
+    // If no pillar exists, try to initialize using new system
+    try {
+      const activePillar = await PillarService.initializePillarIfNeeded(tenantId);
+      if (activePillar && activePillar.categoryKey && activePillar.pillarKeyword) {
+        // Retry with new active pillar
+        return await this.getCurrentCluster(tenantId);
+      }
+    } catch (error) {
+      console.warn('Failed to initialize pillar using new system:', error.message);
+    }
+
+    // Last resort: initialize legacy pillar
+    await this.initializePillar(tenantId);
+    const updatedTenant = await TenantService.getTenantById(tenantId);
+    return await this.getCurrentCluster(tenantId);
   }
 
   /**
@@ -117,11 +165,17 @@ Return JSON with format:
     };
     await tenant.save();
 
-    // Create cluster
+    // Create cluster (legacy - try to infer categoryKey)
+    let categoryKey = 'general';
+    if (tenant.contentPillars && tenant.contentPillars.length > 0) {
+      categoryKey = tenant.contentPillars[0].categoryKey || 'general';
+    }
+    
     await KeywordCluster.create({
       tenantId,
+      categoryKey,
       pillarKeyword,
-      supportingKeywords: []
+      supportingTopics: []
     });
 
     return pillarKeyword;
@@ -195,8 +249,8 @@ Return JSON with format:
       }));
     }
 
-    // Filter out duplicates
-    const existingKeywords = cluster.supportingKeywords.map(k => k.keyword.toLowerCase());
+    // Filter out duplicates (use supportingTopics)
+    const existingKeywords = (cluster.supportingTopics || []).map(k => k.keyword?.toLowerCase() || '').filter(Boolean);
     keywords = keywords.filter(k => {
       const kw = k.keyword?.toLowerCase() || '';
       return kw && 
@@ -210,10 +264,17 @@ Return JSON with format:
       keyword: k.keyword,
       intent: k.intent || 'informational',
       suggestedSlug: k.suggested_slug || k.keyword.toLowerCase().replace(/\s+/g, '-'),
-      status: 'planned'
+      status: 'planned',
+      pageId: null,
+      createdAt: new Date()
     }));
 
-    cluster.supportingKeywords.push(...newKeywords);
+    // Use supportingTopics (new system) instead of supportingKeywords (legacy virtual)
+    if (!cluster.supportingTopics) {
+      cluster.supportingTopics = [];
+    }
+    cluster.supportingTopics.push(...newKeywords);
+    cluster.updatedAt = new Date();
     await cluster.save();
 
     return newKeywords;
@@ -221,17 +282,43 @@ Return JSON with format:
 
   /**
    * Mark a supporting keyword as created
+   * Works with both new (supportingTopics) and legacy (supportingKeywords) systems
    */
   static async markKeywordCreated(tenantId, keyword, pageId) {
-    const cluster = await this.getCurrentCluster(tenantId);
-    const keywordEntry = cluster.supportingKeywords.find(
-      k => k.keyword.toLowerCase() === keyword.toLowerCase()
-    );
+    try {
+      const cluster = await this.getCurrentCluster(tenantId);
+      
+      // Try new system first (supportingTopics)
+      if (cluster.supportingTopics && cluster.supportingTopics.length > 0) {
+        const topicEntry = cluster.supportingTopics.find(
+          t => t.keyword && t.keyword.toLowerCase() === keyword.toLowerCase()
+        );
 
-    if (keywordEntry) {
-      keywordEntry.status = 'created';
-      keywordEntry.pageId = pageId;
-      await cluster.save();
+        if (topicEntry) {
+          topicEntry.status = 'created';
+          topicEntry.pageId = pageId;
+          cluster.updatedAt = new Date();
+          await cluster.save();
+          return;
+        }
+      }
+      
+      // Fallback to legacy system (supportingKeywords - virtual field)
+      // Note: supportingKeywords is a virtual that maps to supportingTopics
+      const keywordEntry = cluster.supportingTopics?.find(
+        t => t.keyword && t.keyword.toLowerCase() === keyword.toLowerCase()
+      );
+
+      if (keywordEntry) {
+        keywordEntry.status = 'created';
+        keywordEntry.pageId = pageId;
+        cluster.updatedAt = new Date();
+        await cluster.save();
+      }
+    } catch (error) {
+      // If cluster doesn't exist or can't be created, that's okay - just log it
+      console.warn(`Could not mark keyword in cluster: ${error.message}`);
+      throw error; // Re-throw so caller can handle it
     }
   }
 
@@ -305,10 +392,11 @@ Return JSON with format:
    */
   static async getPlannedKeywords(tenantId, limit = 5) {
     const cluster = await this.getCurrentCluster(tenantId);
-    return cluster.supportingKeywords
+    return (cluster.supportingTopics || [])
       .filter(k => k.status === 'planned')
       .slice(0, limit)
-      .map(k => k.keyword);
+      .map(k => k.keyword)
+      .filter(Boolean);
   }
 }
 

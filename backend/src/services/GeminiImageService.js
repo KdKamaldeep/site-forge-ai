@@ -102,57 +102,81 @@ export class GeminiImageService {
    *  - context (used for prompt enhancement)
    *  - provider: "imagen" | "gemini" (default: "imagen")
    *  - tenantId
+   *  - maxRetries: number of retries (default: 2)
    */
   static async generateImage(prompt, options = {}) {
     const startTime = Date.now();
     const tenantId = options.tenantId || null;
+    const maxRetries = options.maxRetries !== undefined ? options.maxRetries : 2;
+    let lastError = null;
 
-    try {
-      const enhancedPrompt = await this.generateImagePrompt(prompt, options);
+    // Retry logic: try up to maxRetries + 1 times (initial attempt + retries)
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`🔄 Retrying image generation (attempt ${attempt + 1}/${maxRetries + 1})...`);
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
 
-      const provider = 'gemini'; //(options.provider || 'imagen').toLowerCase();
+        const enhancedPrompt = await this.generateImagePrompt(prompt, options);
 
-      console.log("------------------------------------------")
-      console.log('provider', provider);
-      console.log("------------------------------------------")
-      let imageUrl;
-      if (provider === 'gemini') {
-        imageUrl = await this.generateImageWithGemini(enhancedPrompt, options);
-      } else {
-        // default = imagen
-        imageUrl = await this.generateImageWithImagen(enhancedPrompt, options);
+        const provider = 'gemini'; //(options.provider || 'imagen').toLowerCase();
+
+        if (attempt === 0) {
+          console.log("------------------------------------------")
+          console.log('provider', provider);
+          console.log("------------------------------------------")
+        }
+        
+        let imageUrl;
+        if (provider === 'gemini') {
+          imageUrl = await this.generateImageWithGemini(enhancedPrompt, options);
+        } else {
+          // default = imagen
+          imageUrl = await this.generateImageWithImagen(enhancedPrompt, options);
+        }
+
+        const duration = Date.now() - startTime;
+
+        await AIAuditService.logSuccess({
+          tenantId,
+          service: 'gemini',
+          operation: 'generateImage',
+          requestData: { prompt, enhancedPrompt, options, attempt: attempt + 1 },
+          responseData: { imageUrl, provider },
+          duration,
+          metadata: { prompt: prompt.substring(0, 100), provider, attempts: attempt + 1 }
+        });
+
+        return imageUrl;
+      } catch (error) {
+        lastError = error;
+        const duration = Date.now() - startTime;
+
+        // Log failure for this attempt
+        await AIAuditService.logFailure({
+          tenantId,
+          service: 'gemini',
+          operation: 'generateImage',
+          error,
+          requestData: { prompt, options, attempt: attempt + 1 },
+          duration,
+          metadata: { prompt: prompt.substring(0, 100), attempt: attempt + 1 }
+        });
+
+        if (attempt < maxRetries) {
+          console.warn(`⚠️  Image generation attempt ${attempt + 1} failed:`, error.message);
+          console.log(`   Will retry ${maxRetries - attempt} more time(s)...`);
+        } else {
+          console.error('Error generating image with Gemini/Imagen after all retries:', error);
+          console.warn('⚠️  Falling back to placeholder image service');
+        }
       }
-
-      const duration = Date.now() - startTime;
-
-      await AIAuditService.logSuccess({
-        tenantId,
-        service: 'gemini',
-        operation: 'generateImage',
-        requestData: { prompt, enhancedPrompt, options },
-        responseData: { imageUrl, provider },
-        duration,
-        metadata: { prompt: prompt.substring(0, 100), provider }
-      });
-
-      return imageUrl;
-    } catch (error) {
-      const duration = Date.now() - startTime;
-
-      await AIAuditService.logFailure({
-        tenantId,
-        service: 'gemini',
-        operation: 'generateImage',
-        error,
-        requestData: { prompt, options },
-        duration,
-        metadata: { prompt: prompt.substring(0, 100) }
-      });
-
-      console.error('Error generating image with Gemini/Imagen:', error);
-      console.warn('⚠️  Falling back to placeholder image service');
-      return this.getImageFromUnsplash(prompt, options);
     }
+
+    // All retries failed, fall back to placeholder
+    return this.getImageFromUnsplash(prompt, options);
   }
 
   /**

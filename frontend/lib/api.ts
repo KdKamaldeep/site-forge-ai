@@ -189,7 +189,7 @@ export async function listPagesByCategory(
   limit: number = 10
 ): Promise<Page[] | null> {
   return fetchAPI<Page[]>(`/pages/category/${tenantId}/${categoryKey}?page=${page}&limit=${limit}`, {
-    next: { revalidate: 3600 }, // Cache for 1 hour
+    cache: 'no-store',
   });
 }
 

@@ -5,4 +5,8 @@ node scripts/run-pillar.js example.com
 node scripts/run-pillar.js example.com --count 5
 
 # Generate 1 page for each pillar
-node scripts/run-pillar.js practicalthinking.com --count 3
+node scripts/run-pillar.js SmartHomeTricks.com --count 3
+
+node scripts/run-pillar.js SmartHomeTricks.com --slug how-to-use-ai
+
+node scripts/run-pillar.js SmartHomeTricks.com --category technology
