@@ -5,10 +5,31 @@ import { NextResponse, NextRequest } from "next/server";
 const tenantCache = new Map<string, { tenant: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+function isApexDomain(host: string) {
+  // remove port if present
+  const h = host.split(":")[0];
+
+  // If it's already www.*, do nothing
+  if (h.startsWith("www.")) return false;
+
+  // Basic rule: "example.com" => 2 labels => apex
+  // "a.example.com" => 3+ labels => subdomain
+  const parts = h.split(".");
+  return parts.length === 2;
+}
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
   let domain = hostname.split(":")[0].toLowerCase();
-  
+  const host = request.headers.get("host") || "";
+  const h = host.split(":")[0];
+
+  if (isApexDomain(h)) {
+    const url = request.nextUrl.clone();
+    url.hostname = `www.${h}`;
+    return NextResponse.redirect(url, 308);
+  }
+
   // If domain doesn't have a TLD (e.g., "thinkpractical" instead of "thinkpractical.com"),
   // try both formats
   const domainVariants = [domain];
@@ -25,55 +46,35 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Check cache first
+    // Try each domain variant until we find a tenant
+    let tenantRes = null;
     let tenant = null;
     let foundDomain = null;
     
     for (const domainVariant of domainVariants) {
-      const cached = tenantCache.get(domainVariant);
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        tenant = cached.tenant;
+      const url = `${apiBase}/tenants/domain/${domainVariant}`;
+      console.log(`[Middleware] Trying domain: ${domainVariant}`);
+      
+      tenantRes = await fetch(url, {
+        cache: "no-store",
+      });
+
+      if (tenantRes.ok) {
+        tenant = await tenantRes.json();
         foundDomain = domainVariant;
-        console.log(`✅ [Middleware] Using cached tenant for: ${domainVariant}`);
         break;
       }
     }
-    
-    // If not in cache, fetch from API
-    if (!tenant) {
-      let tenantRes = null;
-      
-      for (const domainVariant of domainVariants) {
-        const url = `${apiBase}/tenants/domain/${domainVariant}`;
-        console.log(`[Middleware] Fetching tenant for: ${domainVariant}`);
-        
-        // Use Next.js fetch caching with short revalidation (5 minutes)
-        tenantRes = await fetch(url, {
-          next: { revalidate: 300 }, // 5 minutes
-        });
 
-        if (tenantRes.ok) {
-          tenant = await tenantRes.json();
-          foundDomain = domainVariant;
-          // Cache the result
-          tenantCache.set(domainVariant, { tenant, timestamp: Date.now() });
-          break;
-        } else if (tenantRes.status === 404) {
-          // Continue to next variant
-          continue;
-        } else {
-          // Error response
-          console.error(`❌ Backend error: ${tenantRes.status} ${tenantRes.statusText}`);
-        }
-      }
-      
-      // If no tenant found after trying all variants
-      if (!tenant) {
+    if (!tenant || !tenantRes?.ok) {
+      if (tenantRes?.status === 404) {
         console.warn(`⚠️ Tenant not found for: ${domainVariants.join(' or ')}`);
         console.warn(`   Make sure the backend is running and the tenant exists in the database.`);
         console.warn(`   Run: cd backend && node scripts/seed-thinkpractical.js`);
-        return NextResponse.next();
+      } else {
+        console.error(`❌ Backend error: ${tenantRes?.status || 'unknown'} ${tenantRes?.statusText || 'fetch failed'}`);
       }
+      return NextResponse.next();
     }
 
     if (!tenant || !tenant._id) {
