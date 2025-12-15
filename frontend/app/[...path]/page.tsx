@@ -109,9 +109,13 @@ export default async function DynamicPathPage({ params }: { params: { path: stri
         notFound();
       }
 
-      const { pages } = await getCategoryLanding(tenantId, categoryKey);
-      // Fetch popular posts and categories for sidebar
-      const allPages = await listPages(tenantId);
+      // Parallelize API calls for faster rendering
+      const [categoryData, allPages] = await Promise.all([
+        getCategoryLanding(tenantId, categoryKey),
+        listPages(tenantId)
+      ]);
+      
+      const { pages } = categoryData;
       const popularPages = Array.isArray(allPages) ? allPages.slice(0, 4) : [];
       const categories = context.siteDNA?.categories || [];
       

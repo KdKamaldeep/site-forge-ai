@@ -2,14 +2,23 @@
  * Thumbnail Service
  * Generates consistent editorial thumbnails for articles using Gemini
  * Thumbnails are used for cards, listings, hero images, and OpenGraph
+ * 
+ * Uploads thumbnails directly to AWS S3 (required)
+ * 
+ * ENV:
+ *  - AWS_S3_BUCKET_NAME (required) - S3 bucket name
+ *  - AWS_ACCESS_KEY_ID (required) - AWS access key
+ *  - AWS_SECRET_ACCESS_KEY (required) - AWS secret key
+ *  - AWS_REGION (optional) - default: us-east-1
+ * 
+ * NOTE:
+ *  - All thumbnails are uploaded to S3 and S3 URLs are returned
+ *  - No local storage is used - images are read from API and directly uploaded to S3
  */
 
 import { GeminiImageService } from './GeminiImageService.js';
 import { AIAuditService } from './AIAuditService.js';
-import path from 'path';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import { fileURLToPath } from 'url';
+import { uploadToS3, isS3Configured } from './S3Service.js';
 import crypto from 'crypto';
 import axios from 'axios';
 
@@ -24,24 +33,6 @@ async function getSharp() {
   }
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Thumbnails directory relative to backend root
-const THUMBNAILS_DIR = path.join(__dirname, '../../images/thumbnails');
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
-
-/**
- * Ensure thumbnails directory exists
- */
-async function ensureThumbnailsDir(tenantSlug) {
-  const tenantDir = path.join(THUMBNAILS_DIR, tenantSlug);
-  if (!existsSync(tenantDir)) {
-    await mkdir(tenantDir, { recursive: true });
-    console.log(`📁 Created thumbnails directory: ${tenantDir}`);
-  }
-  return tenantDir;
-}
 
 /**
  * Check if an existing Gemini image is suitable as thumbnail
@@ -105,20 +96,12 @@ Mood: calm, informative, practical`;
  */
 async function downloadAndSaveThumbnail(imageUrl, tenantSlug, pageSlug) {
   try {
-    const tenantDir = await ensureThumbnailsDir(tenantSlug);
-    const filename = `${pageSlug}.png`;
-    const filePath = path.join(tenantDir, filename);
-
-    // Skip if file already exists
-    if (existsSync(filePath)) {
-      console.log(`📸 Thumbnail already exists: ${filename}`);
-      return {
-        url: `/images/thumbnails/${tenantSlug}/${filename}`,
-        width: 1200,
-        height: 675,
-        hash: crypto.createHash('md5').update(imageUrl).digest('hex')
-      };
+    // S3 is required
+    if (!isS3Configured()) {
+      throw new Error('S3 is not configured. Please set AWS_S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY in .env');
     }
+
+    const filename = `${pageSlug}.png`;
 
     // Download image
     console.log(`⬇️  Downloading thumbnail: ${imageUrl}`);
@@ -145,22 +128,26 @@ async function downloadAndSaveThumbnail(imageUrl, tenantSlug, pageSlug) {
           .png()
           .toBuffer();
       } catch (sharpError) {
-        // If sharp fails, save original
-        console.warn('Sharp processing failed, saving original:', sharpError.message);
+        // If sharp fails, use original
+        console.warn('Sharp processing failed, using original:', sharpError.message);
         processedImage = response.data;
       }
     } else {
-      // Save as-is if sharp is not available
-      console.log('Sharp not available, saving thumbnail without processing');
+      // Use as-is if sharp is not available
+      console.log('Sharp not available, using thumbnail without processing');
     }
 
-    // Save to disk
-    await writeFile(filePath, processedImage);
-    console.log(`✅ Saved thumbnail: ${filename}`);
+    // Convert to Buffer if not already
+    const buffer = Buffer.isBuffer(processedImage) ? processedImage : Buffer.from(processedImage);
+
+    // Upload directly to S3
+    const s3Key = `images/thumbnails/${tenantSlug}/${filename}`;
+    const thumbnailUrl = await uploadToS3(buffer, s3Key, 'image/png');
+    console.log(`✅ Thumbnail uploaded to S3: ${thumbnailUrl}`);
 
     const hash = crypto.createHash('md5').update(imageUrl).digest('hex');
     return {
-      url: `${BACKEND_URL}/images/thumbnails/${tenantSlug}/${filename}`,
+      url: thumbnailUrl,
       width: 1200,
       height: 675,
       hash

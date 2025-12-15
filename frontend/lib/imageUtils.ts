@@ -3,7 +3,7 @@
  * Converts relative paths and old full URLs to proper API URLs
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.API_IMAGE_BASE_URL || 'http://localhost:5000';
 
 /**
  * Normalize image URL

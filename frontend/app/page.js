@@ -31,15 +31,15 @@ export default async function HomePage() {
     );
   }
 
-  const context = await getTenantContext();
-  const categories = context.siteDNA?.categories || [];
-
   try {
-    // Fetch homepage
-    const page = await getHomePage(tenantId);
+    // Parallelize API calls for faster rendering
+    const [context, page, latestPages] = await Promise.all([
+      getTenantContext(),
+      getHomePage(tenantId),
+      listPages(tenantId)
+    ]);
     
-    // Fetch latest pages (exclude standalone pages)
-    const latestPages = await listPages(tenantId);
+    const categories = context.siteDNA?.categories || [];
     const allArticles = Array.isArray(latestPages) 
       ? latestPages.filter(page => {
           // Explicitly exclude standalone pages

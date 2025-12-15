@@ -4,34 +4,34 @@
  *  - Gemini image generation models (generateContent with inlineData)
  *  - Imagen models (generateImages with imageBytes)
  *
- * Saves generated images locally and serves them from /images endpoint
+ * Uploads generated images directly to AWS S3 (required)
  *
  * ENV:
  *  - GEMINI_API_KEY (required)
  *  - GEMINI_IMAGE_MODEL (optional) e.g. "gemini-2.5-flash-image" | "gemini-3-pro-image-preview"
  *  - IMAGEN_MODEL (optional) e.g. "imagen-4.0-generate-001"
- *  - BACKEND_URL (optional) default http://localhost:5000
+ *  - AWS_S3_BUCKET_NAME (required) - S3 bucket name
+ *  - AWS_ACCESS_KEY_ID (required) - AWS access key
+ *  - AWS_SECRET_ACCESS_KEY (required) - AWS secret key
+ *  - AWS_REGION (optional) - default: us-east-1
  *
  * NOTE:
  *  - Google APIs return aspect-ratio based images. If you need exact pixel dimensions,
  *    generate then resize/crop locally (not included here).
+ *  - All images are uploaded to S3 and S3 URLs are returned
+ *  - No local storage is used - images are read from API and directly uploaded to S3
  */
 
 import { GoogleGenAI } from '@google/genai';
 import axios from 'axios';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import { AIAuditService } from './AIAuditService.js';
+import { uploadToS3, isS3Configured } from './S3Service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Images directory relative to backend root
-const IMAGES_DIR = path.join(__dirname, '../../images');
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 
 let genaiClient = null;
 
@@ -94,7 +94,7 @@ export class GeminiImageService {
    * Generate an image using:
    *  1) Gemini to enhance the prompt (text model)
    *  2) Imagen OR Gemini image models to generate the image
-   *  3) Save locally and return `${BACKEND_URL}/images/<file>`
+   *  3) Upload to S3 and return S3 URL
    *
    * options:
    *  - width, height (used to derive aspectRatio)
@@ -213,11 +213,16 @@ export class GeminiImageService {
     const buffer = Buffer.from(imageBytes, 'base64');
 
     const filename = this.makeImageFilename(prompt, width, height, 'png');
-    await this.ensureImagesDir();
-    await writeFile(path.join(IMAGES_DIR, filename), buffer);
-
-    console.log(`✅ Generated image saved: ${filename}`);
-    return `/images/${filename}`;
+    
+    // Upload directly to S3 (required)
+    if (!isS3Configured()) {
+      throw new Error('S3 is not configured. Please set AWS_S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY in .env');
+    }
+    
+    const s3Key = `images/${filename}`;
+    const s3Url = await uploadToS3(buffer, s3Key, 'image/png');
+    console.log(`✅ Generated image uploaded to S3: ${s3Url}`);
+    return s3Url;
   }
 
   /**
@@ -255,11 +260,16 @@ export class GeminiImageService {
     const buffer = Buffer.from(base64, 'base64');
 
     const filename = this.makeImageFilename(prompt, width, height, 'png');
-    await this.ensureImagesDir();
-    await writeFile(path.join(IMAGES_DIR, filename), buffer);
-
-    console.log(`✅ Generated image saved: ${filename}`);
-    return `/images/${filename}`;
+    
+    // Upload directly to S3 (required)
+    if (!isS3Configured()) {
+      throw new Error('S3 is not configured. Please set AWS_S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY in .env');
+    }
+    
+    const s3Key = `images/${filename}`;
+    const s3Url = await uploadToS3(buffer, s3Key, 'image/png');
+    console.log(`✅ Generated image uploaded to S3: ${s3Url}`);
+    return s3Url;
   }
 
   /**
@@ -302,36 +312,22 @@ Return only the enhanced image description, nothing else.`;
   }
 
   /**
-   * Ensure images directory exists
-   */
-  static async ensureImagesDir() {
-    if (!existsSync(IMAGES_DIR)) {
-      await mkdir(IMAGES_DIR, { recursive: true });
-      console.log(`📁 Created images directory: ${IMAGES_DIR}`);
-    }
-  }
-
-  /**
-   * Download image from URL and save locally
+   * Download image from URL and upload to S3
    * @param {string} imageUrl - URL of the image to download
    * @param {string} filename - Optional filename (will generate if not provided)
-   * @returns {Promise<string>} - Local image URL served from backend
+   * @returns {Promise<string>} - S3 URL of uploaded image
    */
   static async downloadAndSaveImage(imageUrl, filename = null) {
     try {
-      await this.ensureImagesDir();
+      // S3 is required
+      if (!isS3Configured()) {
+        throw new Error('S3 is not configured. Please set AWS_S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY in .env');
+      }
 
       if (!filename) {
         const hash = crypto.createHash('md5').update(imageUrl).digest('hex');
         const ext = path.extname(new URL(imageUrl).pathname) || '.jpg';
         filename = `${hash}${ext}`;
-      }
-
-      const filePath = path.join(IMAGES_DIR, filename);
-
-      if (existsSync(filePath)) {
-        console.log(`📸 Image already exists: ${filename}`);
-        return `/images/${filename}`;
       }
 
       console.log(`⬇️  Downloading image: ${imageUrl}`);
@@ -345,12 +341,14 @@ Return only the enhanced image description, nothing else.`;
         }
       });
 
-      await writeFile(filePath, response.data);
-      console.log(`✅ Saved image: ${filename}`);
+      const buffer = Buffer.from(response.data);
+      const contentType = path.extname(filename) === '.jpg' || path.extname(filename) === '.jpeg' ? 'image/jpeg' : 'image/png';
 
-      const imageUrlReturn = `/images/${filename}`;
-      console.log(`📸 Image URL: ${imageUrlReturn}`);
-      return imageUrlReturn;
+      // Upload directly to S3
+      const s3Key = `images/${filename}`;
+      const s3Url = await uploadToS3(buffer, s3Key, contentType);
+      console.log(`✅ Downloaded image uploaded to S3: ${s3Url}`);
+      return s3Url;
     } catch (error) {
       console.error('Error downloading/saving image:', error.message);
       const width = 1200;
@@ -360,7 +358,7 @@ Return only the enhanced image description, nothing else.`;
   }
 
   /**
-   * Fallback: Get random image and save locally (picsum)
+   * Fallback: Get random image from Unsplash (returns URL directly)
    */
   static async getImageFromUnsplash(prompt, options = {}) {
     try {

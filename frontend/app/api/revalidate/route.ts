@@ -2,10 +2,11 @@
  * API Route: Revalidate Pages
  * POST /api/revalidate
  * Secured by secret token
+ * Supports both path-based and tag-based revalidation
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET || 'change-me-in-production';
 
@@ -20,19 +21,27 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { path, type } = body;
+    const { path, type, tag } = body;
 
+    // Path-based revalidation
     if (type === 'path' && path) {
       revalidatePath(path);
-      return NextResponse.json({ revalidated: true, path });
+      return NextResponse.json({ revalidated: true, path, type: 'path' });
     }
 
+    // Tag-based revalidation (for cache tags)
+    if (type === 'tag' && tag) {
+      revalidateTag(tag);
+      return NextResponse.json({ revalidated: true, tag, type: 'tag' });
+    }
+
+    // Support legacy format
     if (type === 'tag' && path) {
-      revalidatePath(path, 'page');
-      return NextResponse.json({ revalidated: true, tag: path });
+      revalidateTag(path);
+      return NextResponse.json({ revalidated: true, tag: path, type: 'tag' });
     }
 
-    return NextResponse.json({ error: 'Invalid type or path' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid type. Use "path" with path or "tag" with tag' }, { status: 400 });
   } catch (error: any) {
     console.error('Revalidation error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -9,6 +9,7 @@
     "dev": "nodemon server.js",
     "seed": "node scripts/seed.js",
     "agent": "node scripts/run-agent.js",
+    "migrate-images": "node scripts/migrate-images-to-s3.js",
     "test:gemini-image": "node src/services/__tests__/GeminiImageService.test.js",
     "test:microsite-agent": "node src/agents/__tests__/micrositeBuilderAgent.test.js"
   },
@@ -21,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.948.0",
     "@google/genai": "^1.33.0",
     "@google/generative-ai": "^0.21.0",
     "axios": "^1.13.2",

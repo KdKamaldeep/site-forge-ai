@@ -1,5 +1,10 @@
 import { NextResponse, NextRequest } from "next/server";
 
+// Cache tenant lookups for 5 minutes to reduce API calls
+// This is a simple in-memory cache (for production, consider using a proper cache)
+const tenantCache = new Map<string, { tenant: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
   let domain = hostname.split(":")[0].toLowerCase();
@@ -20,35 +25,55 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Try each domain variant until we find a tenant
-    let tenantRes = null;
+    // Check cache first
     let tenant = null;
     let foundDomain = null;
     
     for (const domainVariant of domainVariants) {
-      const url = `${apiBase}/tenants/domain/${domainVariant}`;
-      console.log(`[Middleware] Trying domain: ${domainVariant}`);
-      
-      tenantRes = await fetch(url, {
-        cache: "no-store",
-      });
-
-      if (tenantRes.ok) {
-        tenant = await tenantRes.json();
+      const cached = tenantCache.get(domainVariant);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        tenant = cached.tenant;
         foundDomain = domainVariant;
+        console.log(`✅ [Middleware] Using cached tenant for: ${domainVariant}`);
         break;
       }
     }
+    
+    // If not in cache, fetch from API
+    if (!tenant) {
+      let tenantRes = null;
+      
+      for (const domainVariant of domainVariants) {
+        const url = `${apiBase}/tenants/domain/${domainVariant}`;
+        console.log(`[Middleware] Fetching tenant for: ${domainVariant}`);
+        
+        // Use Next.js fetch caching with short revalidation (5 minutes)
+        tenantRes = await fetch(url, {
+          next: { revalidate: 300 }, // 5 minutes
+        });
 
-    if (!tenant || !tenantRes?.ok) {
-      if (tenantRes?.status === 404) {
+        if (tenantRes.ok) {
+          tenant = await tenantRes.json();
+          foundDomain = domainVariant;
+          // Cache the result
+          tenantCache.set(domainVariant, { tenant, timestamp: Date.now() });
+          break;
+        } else if (tenantRes.status === 404) {
+          // Continue to next variant
+          continue;
+        } else {
+          // Error response
+          console.error(`❌ Backend error: ${tenantRes.status} ${tenantRes.statusText}`);
+        }
+      }
+      
+      // If no tenant found after trying all variants
+      if (!tenant) {
         console.warn(`⚠️ Tenant not found for: ${domainVariants.join(' or ')}`);
         console.warn(`   Make sure the backend is running and the tenant exists in the database.`);
         console.warn(`   Run: cd backend && node scripts/seed-thinkpractical.js`);
-      } else {
-        console.error(`❌ Backend error: ${tenantRes?.status || 'unknown'} ${tenantRes?.statusText || 'fetch failed'}`);
+        return NextResponse.next();
       }
-      return NextResponse.next();
     }
 
     if (!tenant || !tenant._id) {

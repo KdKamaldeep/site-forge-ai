@@ -120,20 +120,30 @@ export interface ClusterStats {
 }
 
 /**
- * Fetch helper for SSR
+ * Fetch helper for SSR with Next.js caching
+ * Uses ISR with 1 hour revalidation by default
+ * Can be overridden with options.cache or options.next.revalidate
  */
-async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T | null> {
+async function fetchAPI<T>(endpoint: string, options?: RequestInit & { 
+  next?: { revalidate?: number; tags?: string[] } 
+}): Promise<T | null> {
   const fullUrl = `${API_BASE_URL}${endpoint}`;
   
   try {
-    const response = await fetch(fullUrl, {
+    // Default to ISR with 1 hour revalidation (3600 seconds)
+    // This allows Next.js to cache responses and revalidate in background
+    const fetchOptions: RequestInit = {
       ...options,
-      cache: options?.cache || 'no-store',
+      // Use Next.js caching with revalidation unless explicitly set to 'no-store'
+      cache: options?.cache === 'no-store' ? 'no-store' : undefined,
+      next: options?.next || { revalidate: 3600 },
       headers: {
         'Content-Type': 'application/json',
         ...options?.headers,
       },
-    });
+    };
+
+    const response = await fetch(fullUrl, fetchOptions);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -152,14 +162,21 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T |
 
 /**
  * Get tenant by domain (includes Site DNA)
+ * Cached with ISR - revalidates every hour
  */
 export async function getTenantByDomain(domain: string): Promise<Tenant | null> {
   const normalizedDomain = domain.toLowerCase().trim();
-  return fetchAPI<Tenant>(`/tenants/domain/${encodeURIComponent(normalizedDomain)}`);
+  return fetchAPI<Tenant>(`/tenants/domain/${encodeURIComponent(normalizedDomain)}`, {
+    next: { 
+      revalidate: 3600, // 1 hour
+      tags: [`tenant-${normalizedDomain}`] // For on-demand revalidation
+    }
+  });
 }
 
 /**
  * Get navigation from tenant (Site DNA navigation)
+ * Cached with ISR - revalidates every hour
  */
 export async function getNavigation(tenantId: string): Promise<NavigationItem[] | null> {
   const tenant = await getTenantByDomain(tenantId); // Fallback: try as domain first
@@ -168,7 +185,12 @@ export async function getNavigation(tenantId: string): Promise<NavigationItem[] 
   }
   
   // Fallback to old navigation endpoint
-  return fetchAPI<{ menu: NavigationItem[] }>(`/navigation/${tenantId}`).then(
+  return fetchAPI<{ menu: NavigationItem[] }>(`/navigation/${tenantId}`, {
+    next: { 
+      revalidate: 3600,
+      tags: [`navigation-${tenantId}`]
+    }
+  }).then(
     nav => nav?.menu || null
   );
 }
@@ -190,6 +212,7 @@ export async function getCategoryLanding(
 
 /**
  * List pages by category (paginated)
+ * Cached with ISR - revalidates every hour
  */
 export async function listPagesByCategory(
   tenantId: string,
@@ -198,16 +221,23 @@ export async function listPagesByCategory(
   limit: number = 10
 ): Promise<Page[] | null> {
   return fetchAPI<Page[]>(`/pages/category/${tenantId}/${categoryKey}?page=${page}&limit=${limit}`, {
-    cache: 'no-store',
+    next: { 
+      revalidate: 3600,
+      tags: [`pages-${tenantId}`, `category-${categoryKey}`]
+    }
   });
 }
 
 /**
  * Get page by slug
+ * Cached with ISR - revalidates every hour
  */
 export async function getPageBySlug(tenantId: string, slug: string): Promise<Page | null> {
   return fetchAPI<Page>(`/pages/${tenantId}/${encodeURIComponent(slug)}`, {
-    cache: 'no-store',
+    next: { 
+      revalidate: 3600,
+      tags: [`pages-${tenantId}`, `page-${tenantId}-${slug}`]
+    }
   });
 }
 
@@ -255,20 +285,28 @@ export async function triggerRunPillar(domainOrTenantId: string, count?: number)
 
 /**
  * Get home page
+ * Cached with ISR - revalidates every hour
  */
 export async function getHomePage(tenantId: string): Promise<Page | null> {
   return fetchAPI<Page>(`/pages/home/${tenantId}`, {
-    cache: 'no-store',
+    next: { 
+      revalidate: 3600,
+      tags: [`pages-${tenantId}`, `homepage-${tenantId}`]
+    }
   });
 }
 
 /**
  * List all pages for tenant
  * Backend returns: { pages: [{ _id, slug, title, meta, categoryKey, readingTime, wordCount, updatedAt }] }
+ * Cached with ISR - revalidates every hour
  */
 export async function listPages(tenantId: string): Promise<Page[] | null> {
   const result = await fetchAPI<{ pages: Page[] }>(`/pages/list/${tenantId}`, {
-    cache: 'no-store',
+    next: { 
+      revalidate: 3600,
+      tags: [`pages-${tenantId}`]
+    }
   });
   
   // Backend returns { pages: [...] }, so extract the array
@@ -278,10 +316,14 @@ export async function listPages(tenantId: string): Promise<Page[] | null> {
 /**
  * Get standalone pages for tenant (Privacy Policy, About Us, Contact, Cookie Disclosure)
  * Backend returns: { pages: [{ _id, slug, title, standalonePageType, updatedAt }] }
+ * Cached with ISR - revalidates every hour
  */
 export async function getStandalonePages(tenantId: string): Promise<Page[] | null> {
   const result = await fetchAPI<{ pages: Page[] }>(`/pages/standalone/${tenantId}`, {
-    cache: 'no-store',
+    next: { 
+      revalidate: 3600,
+      tags: [`pages-${tenantId}`, `standalone-${tenantId}`]
+    }
   });
   
   return result?.pages || null;
