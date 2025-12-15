@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { formatTitle } from '@/lib/textFormat';
+import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './ArticleLayout.module.css';
 
 export default function ArticleLayout({ 
@@ -213,17 +214,20 @@ export default function ArticleLayout({
         {/* Main content */}
         <div className={styles.articleMain}>
           {/* Hero Image (thumbnail fallback) */}
-          {thumbnail?.url && (
-            <div className={styles.heroImageWrapper}>
-              <img 
-                src={thumbnail.url} 
-                alt={title}
-                className={styles.heroImage}
-                width={thumbnail.width || 1200}
-                height={thumbnail.height || 675}
-              />
-            </div>
-          )}
+          {(() => {
+            const normalizedThumbnail = normalizeThumbnail(thumbnail);
+            return normalizedThumbnail?.url && (
+              <div className={styles.heroImageWrapper}>
+                <img 
+                  src={normalizedThumbnail.url} 
+                  alt={title}
+                  className={styles.heroImage}
+                  width={normalizedThumbnail.width || 1200}
+                  height={normalizedThumbnail.height || 675}
+                />
+              </div>
+            );
+          })()}
           
           {/* Article Header */}
           {!isStandalone && (

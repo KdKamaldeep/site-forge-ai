@@ -87,7 +87,11 @@ export interface Page {
   updatedAt?: string;
   publishedAt?: string;
   isStandalone?: boolean;
-  thumbnail?: string;
+  thumbnail?: {
+    url?: string | null;
+    width?: number;
+    height?: number;
+  } | null;
   standalonePageType?: 'privacy-policy' | 'about-us' | 'contact' | 'cookie-disclosure' | null;
 }
 

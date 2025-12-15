@@ -217,7 +217,7 @@ export class GeminiImageService {
     await writeFile(path.join(IMAGES_DIR, filename), buffer);
 
     console.log(`✅ Generated image saved: ${filename}`);
-    return `${BACKEND_URL}/images/${filename}`;
+    return `/images/${filename}`;
   }
 
   /**
@@ -259,7 +259,7 @@ export class GeminiImageService {
     await writeFile(path.join(IMAGES_DIR, filename), buffer);
 
     console.log(`✅ Generated image saved: ${filename}`);
-    return `${BACKEND_URL}/images/${filename}`;
+    return `/images/${filename}`;
   }
 
   /**
@@ -331,7 +331,7 @@ Return only the enhanced image description, nothing else.`;
 
       if (existsSync(filePath)) {
         console.log(`📸 Image already exists: ${filename}`);
-        return `${BACKEND_URL}/images/${filename}`;
+        return `/images/${filename}`;
       }
 
       console.log(`⬇️  Downloading image: ${imageUrl}`);
@@ -348,7 +348,7 @@ Return only the enhanced image description, nothing else.`;
       await writeFile(filePath, response.data);
       console.log(`✅ Saved image: ${filename}`);
 
-      const imageUrlReturn = `${BACKEND_URL}/images/${filename}`;
+      const imageUrlReturn = `/images/${filename}`;
       console.log(`📸 Image URL: ${imageUrlReturn}`);
       return imageUrlReturn;
     } catch (error) {

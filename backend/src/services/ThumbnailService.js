@@ -113,7 +113,7 @@ async function downloadAndSaveThumbnail(imageUrl, tenantSlug, pageSlug) {
     if (existsSync(filePath)) {
       console.log(`📸 Thumbnail already exists: ${filename}`);
       return {
-        url: `${BACKEND_URL}/images/thumbnails/${tenantSlug}/${filename}`,
+        url: `/images/thumbnails/${tenantSlug}/${filename}`,
         width: 1200,
         height: 675,
         hash: crypto.createHash('md5').update(imageUrl).digest('hex')

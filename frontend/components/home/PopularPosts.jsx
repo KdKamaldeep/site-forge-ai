@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { formatTitle } from '@/lib/textFormat';
+import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './PopularPosts.module.css';
 
 export default function PopularPosts({ articles }) {
@@ -31,19 +32,23 @@ export default function PopularPosts({ articles }) {
               className={styles.link}
             >
               <div className={styles.thumbnail}>
-                {article.thumbnail?.url ? (
-                  <img 
-                    src={article.thumbnail.url} 
-                    alt={article.title} 
-                    className={styles.thumbnailImage}
-                    width={article.thumbnail.width || 1200}
-                    height={article.thumbnail.height || 675}
-                  />
-                ) : article.meta?.ogImage ? (
-                  <img src={article.meta.ogImage} alt={article.title} className={styles.thumbnailImage} />
-                ) : (
-                  <div className={styles.thumbnailPlaceholder}></div>
-                )}
+                {(() => {
+                  const normalizedThumbnail = normalizeThumbnail(article.thumbnail);
+                  const normalizedOgImage = normalizeImageUrl(article.meta?.ogImage);
+                  return normalizedThumbnail?.url ? (
+                    <img 
+                      src={normalizedThumbnail.url} 
+                      alt={article.title} 
+                      className={styles.thumbnailImage}
+                      width={normalizedThumbnail.width || 1200}
+                      height={normalizedThumbnail.height || 675}
+                    />
+                  ) : normalizedOgImage ? (
+                    <img src={normalizedOgImage} alt={article.title} className={styles.thumbnailImage} />
+                  ) : (
+                    <div className={styles.thumbnailPlaceholder}></div>
+                  );
+                })()}
               </div>
               <div className={styles.content}>
                 <h4 className={styles.itemTitle}>{formatTitle(article.title)}</h4>

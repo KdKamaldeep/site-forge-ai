@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatTitle } from '@/lib/textFormat';
 import { getStandalonePages } from '@/lib/api';
+import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './Footer.module.css';
 
 export default function Footer({ navigation, tenant, categories = [], popularPosts = [] }) {
@@ -105,19 +106,23 @@ export default function Footer({ navigation, tenant, categories = [], popularPos
               popularPosts.map((post) => (
                 <Link key={post._id} href={post.categoryKey ? `/${post.categoryKey}/${post.slug}` : `/${post.slug}`} className={styles.popularPost}>
                   <div className={styles.popularThumbnail}>
-                    {post.thumbnail?.url ? (
-                      <img 
-                        src={post.thumbnail.url} 
-                        alt={post.title} 
-                        className={styles.popularImage}
-                        width={post.thumbnail.width || 1200}
-                        height={post.thumbnail.height || 675}
-                      />
-                    ) : post.meta?.ogImage ? (
-                      <img src={post.meta.ogImage} alt={post.title} className={styles.popularImage} />
-                    ) : (
-                      <div className={styles.popularPlaceholder}></div>
-                    )}
+                    {(() => {
+                      const normalizedThumbnail = normalizeThumbnail(post.thumbnail);
+                      const normalizedOgImage = normalizeImageUrl(post.meta?.ogImage);
+                      return normalizedThumbnail?.url ? (
+                        <img 
+                          src={normalizedThumbnail.url} 
+                          alt={post.title} 
+                          className={styles.popularImage}
+                          width={normalizedThumbnail.width || 1200}
+                          height={normalizedThumbnail.height || 675}
+                        />
+                      ) : normalizedOgImage ? (
+                        <img src={normalizedOgImage} alt={post.title} className={styles.popularImage} />
+                      ) : (
+                        <div className={styles.popularPlaceholder}></div>
+                      );
+                    })()}
                   </div>
                   <div className={styles.popularContent}>
                     <h5 className={styles.popularTitle}>{formatTitle(post.title)}</h5>

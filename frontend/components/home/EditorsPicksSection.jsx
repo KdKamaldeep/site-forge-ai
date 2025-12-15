@@ -7,6 +7,7 @@ import Link from 'next/link';
 import CategoryBadge from '@/components/articles/CategoryBadge';
 import MetaLine from '@/components/articles/MetaLine';
 import { formatTitle, getExcerpt } from '@/lib/textFormat';
+import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './EditorsPicksSection.module.css';
 
 export default function EditorsPicksSection({ articles = [], title = "Editor's Picks" }) {
@@ -28,23 +29,27 @@ export default function EditorsPicksSection({ articles = [], title = "Editor's P
                   <div className={styles.articleLayout}>
                     {/* Image */}
                     <div className={styles.imageWrapper}>
-                      {article.thumbnail?.url ? (
-                        <img 
-                          src={article.thumbnail.url} 
-                          alt={article.title}
-                          className={styles.articleImage}
-                          width={article.thumbnail.width || 1200}
-                          height={article.thumbnail.height || 675}
-                        />
-                      ) : article.meta?.ogImage ? (
-                        <img 
-                          src={article.meta.ogImage} 
-                          alt={article.title}
-                          className={styles.articleImage}
-                        />
-                      ) : (
-                        <div className={styles.imagePlaceholder} />
-                      )}
+                      {(() => {
+                        const normalizedThumbnail = normalizeThumbnail(article.thumbnail);
+                        const normalizedOgImage = normalizeImageUrl(article.meta?.ogImage);
+                        return normalizedThumbnail?.url ? (
+                          <img 
+                            src={normalizedThumbnail.url} 
+                            alt={article.title}
+                            className={styles.articleImage}
+                            width={normalizedThumbnail.width || 1200}
+                            height={normalizedThumbnail.height || 675}
+                          />
+                        ) : normalizedOgImage ? (
+                          <img 
+                            src={normalizedOgImage} 
+                            alt={article.title}
+                            className={styles.articleImage}
+                          />
+                        ) : (
+                          <div className={styles.imagePlaceholder} />
+                        );
+                      })()}
                       {article.categoryKey && (
                         <div className={styles.badgeWrapper}>
                           <CategoryBadge 

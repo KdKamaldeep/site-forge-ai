@@ -4,6 +4,7 @@
 
 import { getPageBySlug, getHomePage, getTenantByDomain } from './api';
 import { getTenantIdFromHeaders, getTenantDomainFromHeaders } from './tenant';
+import { normalizeThumbnail, normalizeImageUrl } from './imageUtils';
 
 /**
  * Generate metadata for a page
@@ -65,8 +66,10 @@ export async function generateMetadata({ params, headers: headersParam }) {
                        page.content?.substring(0, 160) || 
                        'MicroSite Empire AI - Multi-tenant micro-site CMS';
     const keywords = meta.keywords || [];
-    // Use thumbnail first, fallback to ogImage
-    const ogImage = page.thumbnail?.url || meta.ogImage || null;
+    // Use thumbnail first, fallback to ogImage, normalize URLs
+    const normalizedThumbnail = normalizeThumbnail(page.thumbnail);
+    const normalizedOgImage = normalizeImageUrl(meta.ogImage);
+    const ogImage = normalizedThumbnail?.url || normalizedOgImage || null;
 
     // Get domain for canonical URL
     const domain = tenantDomain || headersParam.get('x-tenant-domain') || headersParam.get('host') || 'localhost';
