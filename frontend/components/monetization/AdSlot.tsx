@@ -10,13 +10,15 @@ interface AdSlotProps {
   slot: string;
   format?: 'auto' | 'rectangle' | 'vertical' | 'horizontal';
   style?: React.CSSProperties;
+  adsenseId?: string;
 }
 
-export default function AdSlot({ slot, format = 'auto', style }: AdSlotProps) {
+export default function AdSlot({ slot, format = 'auto', style, adsenseId }: AdSlotProps) {
   // For now, render as placeholder
   // In production, you would inject AdSense script and render actual ads
   const isProduction = process.env.NODE_ENV === 'production';
-  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_ID;
+  // Use prop adsenseId if provided, otherwise fallback to env variable for backward compatibility
+  const adClientId = adsenseId || process.env.NEXT_PUBLIC_ADSENSE_ID;
 
   if (!isProduction || !adsenseId) {
     // Development placeholder - minimal, clean
@@ -57,7 +59,7 @@ export default function AdSlot({ slot, format = 'auto', style }: AdSlotProps) {
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
-        data-ad-client={adsenseId}
+        data-ad-client={adClientId}
         data-ad-slot={slot}
         data-ad-format={format}
         data-full-width-responsive="true"

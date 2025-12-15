@@ -32,6 +32,13 @@ export default async function RootLayout({ children }) {
             tenantDomain={tenant.domain}
           />
         )}
+        {tenant?.adsenseId && (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${tenant.adsenseId}`}
+            crossOrigin="anonymous"
+          />
+        )}
       </head>
       <body>
         <ThemeProvider theme={tenant}>

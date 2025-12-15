@@ -125,6 +125,7 @@ export default async function HomePage() {
         readingTime={page.readingTime}
         thumbnail={page.thumbnail}
         wordCount={page.wordCount}
+        adsenseId={context.tenant?.adsenseId}
       />
     );
   } catch (error) {

@@ -19,8 +19,6 @@ function generateSitemapXML(pages: any[], baseUrl: string): string {
   const urls = pages
     .filter(page => !page.isStandalone) // Exclude standalone pages from sitemap
     .map(page => {
-      console.log('page', page.categoryKey);
-      console.log('===============================================');
       // Construct URL with categoryKey if available
       let urlPath = '';
       if (page.slug === 'home' || (page as any).isHome) {

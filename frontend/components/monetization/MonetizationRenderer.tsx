@@ -16,6 +16,7 @@ interface MonetizationRendererProps {
   intent?: 'informational' | 'commercial' | 'lead';
   monetizationMode?: 'adsense' | 'affiliate' | 'lead' | 'mixed';
   tenantId?: string;
+  adsenseId?: string;
 }
 
 export default function MonetizationRenderer({
@@ -23,6 +24,7 @@ export default function MonetizationRenderer({
   intent = 'informational',
   monetizationMode = 'adsense',
   tenantId,
+  adsenseId,
 }: MonetizationRendererProps) {
   const [processedContent, setProcessedContent] = useState<string>('');
   const [components, setComponents] = useState<Array<{ type: string; props: any; id: string }>>([]);
@@ -79,7 +81,7 @@ export default function MonetizationRenderer({
 
     setProcessedContent(doc.body.innerHTML);
     setComponents(placeholders);
-  }, [content, tenantId]);
+  }, [content, tenantId, adsenseId]);
 
   // Render content with components inserted
   const renderContent = () => {
@@ -108,7 +110,7 @@ export default function MonetizationRenderer({
       const component = components.find((c) => c.id === componentId);
       if (component) {
         if (component.type === 'ad') {
-          parts.push(<AdSlot key={componentId} {...component.props} />);
+          parts.push(<AdSlot key={componentId} {...component.props} adsenseId={adsenseId} />);
         } else if (component.type === 'affiliate') {
           parts.push(<AffiliateTable key={componentId} {...component.props} />);
         } else if (component.type === 'lead') {

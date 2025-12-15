@@ -26,6 +26,7 @@ export default function PageRenderer({
   publishedAt,
   thumbnail,
   isStandalone,
+  adsenseId,
 }) {
   // Render UX Layout if available (structured layout) - skip for standalone pages
   if (!isStandalone && layout?.sections && Array.isArray(layout.sections) && layout.sections.length > 0) {
@@ -61,6 +62,7 @@ export default function PageRenderer({
         monetizationMode={isStandalone ? 'none' : (monetizationMode || 'adsense')} // No ads for standalone pages
         thumbnail={thumbnail}
         isStandalone={isStandalone}
+        adsenseId={adsenseId}
       />
     </>
   );

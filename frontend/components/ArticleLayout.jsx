@@ -23,6 +23,7 @@ export default function ArticleLayout({
   monetizationMode,
   thumbnail,
   isStandalone,
+  adsenseId,
 }) {
   const contentRef = useRef(null);
   const [toc, setToc] = useState([]);
@@ -104,25 +105,42 @@ export default function ArticleLayout({
         placeholder.appendChild(mountPoint);
         // Note: In a real implementation, you'd use ReactDOM.render or a portal here
         // For now, we'll use AdSlot directly via dangerouslySetInnerHTML approach
-        // Actually, let's just render a clean placeholder
-        placeholder.innerHTML = `
-          <div style="
-            min-height: 250px;
-            background: var(--border-light, #f9fafb);
-            border: 1px solid var(--border, #e5e7eb);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted, #9ca3af);
-            font-size: 0.875rem;
-            margin: var(--spacing-xl, 3rem) 0;
-          ">
-            <div style="text-align: center;">
-              <div>Advertisement</div>
-              <div style="font-size: 0.75rem; margin-top: 0.5rem;">Ad Slot: ${slot}</div>
+        // Render AdSense ad if adsenseId is available, otherwise show placeholder
+        if (adsenseId) {
+          placeholder.innerHTML = `
+            <ins
+              class="adsbygoogle"
+              style="display:block"
+              data-ad-client="${adsenseId}"
+              data-ad-slot="${slot}"
+              data-ad-format="auto"
+              data-full-width-responsive="true"
+            ></ins>
+            <script>
+              (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+          `;
+        } else {
+          // Placeholder when AdSense not configured
+          placeholder.innerHTML = `
+            <div style="
+              min-height: 250px;
+              background: var(--border-light, #f9fafb);
+              border: 1px solid var(--border, #e5e7eb);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: var(--text-muted, #9ca3af);
+              font-size: 0.875rem;
+              margin: var(--spacing-xl, 3rem) 0;
+            ">
+              <div style="text-align: center;">
+                <div>Advertisement</div>
+                <div style="font-size: 0.75rem; margin-top: 0.5rem;">Ad Slot: ${slot}</div>
+              </div>
             </div>
-          </div>
-        `;
+          `;
+        }
       }
     });
 
@@ -144,7 +162,7 @@ export default function ArticleLayout({
         `;
       }
     });
-  }, [content, monetizationMode]);
+  }, [content, monetizationMode, adsenseId]);
 
   // Update active heading on scroll
   useEffect(() => {

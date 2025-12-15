@@ -81,7 +81,8 @@ export class TenantService {
       monetization: tenant.monetization || null,
       compliance: tenant.compliance || null,
       publishingStrategy: tenant.publishingStrategy || null,
-      googleAnalyticsId: tenant.googleAnalyticsId || null
+      googleAnalyticsId: tenant.googleAnalyticsId || null,
+      adsenseId: tenant.adsenseId || null
     };
 
     console.log(`[TenantService] Returning tenant data for: ${response.name}`);

@@ -34,6 +34,7 @@ export interface Tenant {
     typography: Record<string, string>;
   };
   googleAnalyticsId?: string;
+  adsenseId?: string;
 }
 
 export interface NavigationItem {
@@ -86,6 +87,7 @@ export interface Page {
   updatedAt?: string;
   publishedAt?: string;
   isStandalone?: boolean;
+  thumbnail?: string;
   standalonePageType?: 'privacy-policy' | 'about-us' | 'contact' | 'cookie-disclosure' | null;
 }
 

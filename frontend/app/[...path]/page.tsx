@@ -63,7 +63,7 @@ export async function generateMetadata({ params }): Promise<Metadata> {
   return { title: 'Page Not Found' };
 }
 
-export default async function DynamicPathPage({ params }) {
+export default async function DynamicPathPage({ params }: any) {
   const { path } = params;
   const pathArray = Array.isArray(path) ? path : [path];
   const headersList = await headers();
@@ -97,11 +97,11 @@ export default async function DynamicPathPage({ params }) {
               intent={page.intent}
               monetizationMode={page.monetizationMode}
               categoryKey={page.categoryKey}
-              primaryKeyword={page.primaryKeyword}
               thumbnail={page.thumbnail}
               isStandalone={page.isStandalone}
               updatedAt={page.updatedAt}
               publishedAt={page.publishedAt}
+              adsenseId={context.tenant?.adsenseId}
             />
           );
         }
@@ -208,6 +208,7 @@ export default async function DynamicPathPage({ params }) {
             thumbnail={page.thumbnail}
             isStandalone={page.isStandalone}
             publishedAt={page.publishedAt}
+            adsenseId={context.tenant?.adsenseId}
           />
         </>
       );
