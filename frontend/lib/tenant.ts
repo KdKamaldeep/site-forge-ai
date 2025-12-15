@@ -9,9 +9,9 @@ import { getTenantByDomain, getNavigation, type Tenant, type NavigationItem } fr
 export interface TenantContext {
   tenant: Tenant | null;
   siteDNA: {
-    brand: Tenant['brandIdentity'];
+    brand: Tenant['brandIdentity'] | undefined;
     nav: NavigationItem[];
-    categories: Tenant['contentPillars'];
+    categories: Tenant['contentPillars'] | undefined;
   } | null;
   activePillar: Tenant['activePillar'] | null;
 }
@@ -50,6 +50,13 @@ export async function getTenantContext(): Promise<TenantContext> {
   try {
     // Try to fetch by domain first (more reliable)
     const domain = tenantDomain || tenantId;
+    if (!domain) {
+      return {
+        tenant: null,
+        siteDNA: null,
+        activePillar: null,
+      };
+    }
     const tenant = await getTenantByDomain(domain);
 
     if (!tenant) {
@@ -62,7 +69,7 @@ export async function getTenantContext(): Promise<TenantContext> {
 
     // Extract Site DNA
     const siteDNA = {
-      brand: tenant.brandIdentity || null,
+      brand: tenant.brandIdentity || undefined,
       nav: tenant.navigation || [],
       categories: tenant.contentPillars || [],
     };

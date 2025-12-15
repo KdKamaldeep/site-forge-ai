@@ -7,6 +7,7 @@ import { getTenantIdFromHeaders, getTenantDomainFromHeaders } from './tenant';
 
 /**
  * Generate metadata for a page
+ * @param {{ params?: { slug?: string }, headers: Headers }} options
  */
 export async function generateMetadata({ params, headers: headersParam }) {
   const tenantId = getTenantIdFromHeaders(headersParam);
@@ -24,9 +25,10 @@ export async function generateMetadata({ params, headers: headersParam }) {
   try {
     // Get tenant information for title
     let tenant = null;
-    if (tenantDomain || tenantId) {
+    const domainOrId = tenantDomain || tenantId;
+    if (domainOrId) {
       try {
-        tenant = await getTenantByDomain(tenantDomain || tenantId);
+        tenant = await getTenantByDomain(domainOrId);
       } catch (error) {
         console.warn('Could not fetch tenant for metadata:', error);
       }
@@ -36,8 +38,8 @@ export async function generateMetadata({ params, headers: headersParam }) {
 
     // For homepage, use getHomePage; otherwise use getPageBySlug
     const page = slug === 'home' 
-      ? await getHomePage(tenantId)
-      : await getPageBySlug(tenantId, slug);
+      ? (tenantId ? await getHomePage(tenantId) : null)
+      : (tenantId ? await getPageBySlug(tenantId, slug) : null);
 
     if (!page) {
       // For home page, show tenant name instead of "Page Not Found"
