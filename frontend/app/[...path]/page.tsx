@@ -17,7 +17,7 @@ import styles from './page.module.css';
 
 export const revalidate = 3600;
 
-export async function generateMetadata({ params }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { path: string | string[] } }): Promise<Metadata> {
   const { path } = params;
   const pathArray = Array.isArray(path) ? path : [path];
   const headersList = await headers();
@@ -37,6 +37,9 @@ export async function generateMetadata({ params }): Promise<Metadata> {
   } else if (pathArray.length === 2) {
     // Article page
     const [categoryKey, slug] = pathArray;
+    if (!tenantId) {
+      return { title: 'Page Not Found' };
+    }
     const page = await getPageBySlug(tenantId, slug);
     
     if (!page) {
@@ -63,7 +66,7 @@ export async function generateMetadata({ params }): Promise<Metadata> {
   return { title: 'Page Not Found' };
 }
 
-export default async function DynamicPathPage({ params }: any) {
+export default async function DynamicPathPage({ params }: { params: { path: string | string[] } }) {
   const { path } = params;
   const pathArray = Array.isArray(path) ? path : [path];
   const headersList = await headers();
@@ -203,7 +206,6 @@ export default async function DynamicPathPage({ params }: any) {
             intent={page.intent}
             monetizationMode={page.monetizationMode}
             categoryKey={page.categoryKey}
-            primaryKeyword={page.primaryKeyword}
             updatedAt={page.updatedAt}
             thumbnail={page.thumbnail}
             isStandalone={page.isStandalone}
