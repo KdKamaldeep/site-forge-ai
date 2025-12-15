@@ -47,7 +47,6 @@ export default function Header({ navigation, tenant }) {
             {logo && (
               <img src={logo} alt={brandName} className={styles.logoImage} />
             )}
-            <span className={styles.logoText}>{formattedBrandName}</span>
           </Link>
 
           {/* Center: Navigation */}
