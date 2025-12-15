@@ -18,9 +18,9 @@ export default function Grid({ columns, items, ...props }) {
                   <img src={normalizedImage} alt={item.title || ''} />
                 </div>
               )}
-            {item.title && <h3 className={styles.gridItemTitle}>{item.title}</h3>}
-            {item.text && <p className={styles.gridItemText}>{item.text}</p>}
-          </div>
+              {item.title && <h3 className={styles.gridItemTitle}>{item.title}</h3>}
+              {item.text && <p className={styles.gridItemText}>{item.text}</p>}
+            </div>
           );
         })}
       </div>
