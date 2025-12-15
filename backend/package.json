@@ -38,6 +38,7 @@
     "mongoose": "^8.0.3",
     "node-cron": "^3.0.3",
     "openai": "^4.20.1",
+    "sharp": "^0.33.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "xml2js": "^0.6.2"

@@ -66,6 +66,7 @@ export class TenantService {
       name: tenant.name,
       domain: tenant.domain,
       logo: tenant.logo || tenant.settings?.logo || null,
+      favicon: tenant.favicon || null,
       theme: {
         colors: tenant.theme?.colors || {},
         typography: tenant.theme?.typography || {}

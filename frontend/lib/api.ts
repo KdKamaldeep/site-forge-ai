@@ -12,6 +12,7 @@ export interface Tenant {
   name: string;
   domain: string;
   logo?: string;
+  favicon?: string;
   brandIdentity?: {
     brandName: string;
     tagline: string;

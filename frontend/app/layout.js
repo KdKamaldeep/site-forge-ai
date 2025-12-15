@@ -22,6 +22,24 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        {/* Favicon */}
+        {tenant?.favicon && (() => {
+          // Extract base URL and tenant ID from favicon URL
+          // Format: https://bucket.s3.amazonaws.com/favicons/{tenantId}/favicon-32x32.png
+          const faviconBaseUrl = tenant.favicon.substring(0, tenant.favicon.lastIndexOf('/') + 1);
+          return (
+            <>
+              <link rel="icon" type="image/png" sizes="32x32" href={tenant.favicon} />
+              <link rel="icon" type="image/png" sizes="16x16" href={`${faviconBaseUrl}favicon-16x16.png`} />
+              <link rel="icon" type="image/png" sizes="48x48" href={`${faviconBaseUrl}favicon-48x48.png`} />
+              <link rel="icon" type="image/png" sizes="64x64" href={`${faviconBaseUrl}favicon-64x64.png`} />
+              <link rel="icon" type="image/png" sizes="128x128" href={`${faviconBaseUrl}favicon-128x128.png`} />
+              <link rel="apple-touch-icon" sizes="180x180" href={`${faviconBaseUrl}apple-touch-icon.png`} />
+              <link rel="icon" type="image/png" sizes="192x192" href={`${faviconBaseUrl}android-chrome-192x192.png`} />
+              <link rel="icon" type="image/png" sizes="512x512" href={`${faviconBaseUrl}android-chrome-512x512.png`} />
+            </>
+          );
+        })()}
         {/* Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

@@ -31,7 +31,7 @@ export class LogoService {
       // Generate logo image (square format for logos)
       const logoUrl = await GeminiImageService.generateImage(logoPrompt, {
         width: 400,
-        height: 400,
+        height: 120,
         style: 'professional',
         context: 'logo',
         tenantId: tenant._id?.toString() || null

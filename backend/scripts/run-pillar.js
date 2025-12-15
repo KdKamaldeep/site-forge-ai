@@ -5,11 +5,13 @@
  * and creates the specified number of pages for each pillar.
  * 
  * Usage:
- *   node scripts/run-pillar.js <domain> [--count 3]
+ *   node scripts/run-pillar.js <domain> [--count 3] [--gen-logo] [--gen-favicon]
  * 
  * Example:
  *   node scripts/run-pillar.js example.com
  *   node scripts/run-pillar.js example.com --count 3
+ *   node scripts/run-pillar.js example.com --gen-logo
+ *   node scripts/run-pillar.js example.com --gen-favicon
  * 
  * This will create 3 pages for each pillar/category in the tenant's contentPillars
  */
@@ -35,6 +37,7 @@ import { PillarService } from '../src/services/PillarService.js';
 import { PageService } from '../src/services/PageService.js';
 import { MicrositeBuilderAgent } from '../src/agents/micrositeBuilderAgent.js';
 import { LogoService } from '../src/services/LogoService.js';
+import { FaviconService } from '../src/services/FaviconService.js';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/microsite-empire';
 
@@ -479,6 +482,9 @@ async function runPillarGeneration() {
     // Parse --gen-logo flag
     const genLogo = args.includes('--gen-logo');
 
+    // Parse --gen-favicon flag
+    const genFavicon = args.includes('--gen-favicon');
+
     // Parse --standalonePagesOnly flag
     const standalonePagesOnly = args.includes('--standalonePagesOnly');
 
@@ -500,7 +506,7 @@ async function runPillarGeneration() {
     const tenantId = tenant._id.toString();
 
     // STEP 1: Generate logo if it doesn't exist (unless --gen-logo flag is set, which handles it separately)
-    if (!genLogo && !tenant.logo && process.env.GEMINI_API_KEY) {
+    if (!genLogo &&  process.env.GEMINI_API_KEY) {
       console.log(`\n🎨 STEP 1: Checking tenant logo...`);
       console.log('='.repeat(70));
       console.log(`📋 Tenant: ${tenant.name} (${tenant.domain})`);
@@ -536,6 +542,45 @@ async function runPillarGeneration() {
       console.log(`   Skipping logo generation. Set GEMINI_API_KEY to auto-generate logos.\n`);
     } else if (tenant.logo) {
       console.log(`\n✅ Tenant already has a logo: ${tenant.logo}\n`);
+    }
+
+    // Handle --gen-favicon mode: generate favicon only
+    if (genFavicon) {
+      console.log(`\n🎨 FAVICON GENERATION MODE: Generating favicons for tenant`);
+      console.log('='.repeat(70));
+      console.log(`📋 Tenant: ${tenant.name} (${tenant.domain})`);
+      
+      if (!tenant.logo) {
+        console.error('❌ Tenant has no logo. Cannot generate favicon without logo.');
+        console.error('   Please generate a logo first using --gen-logo or set a logo manually');
+        await mongoose.disconnect();
+        process.exit(1);
+      }
+      
+      try {
+        const faviconUrl = await FaviconService.generateFavicons(tenant);
+        
+        if (faviconUrl) {
+          // Update tenant with generated favicon
+          const updatedTenant = await TenantService.getTenantById(tenantId);
+          if (updatedTenant) {
+            updatedTenant.favicon = faviconUrl;
+            await updatedTenant.save();
+            console.log(`✅ Favicon generated and saved successfully!`);
+            console.log(`   Favicon URL: ${faviconUrl}`);
+          } else {
+            console.error(`❌ Could not update tenant with favicon`);
+          }
+        } else {
+          console.error(`❌ Failed to generate favicon`);
+        }
+      } catch (error) {
+        console.error(`❌ Error generating favicon:`, error.message);
+      }
+      
+      console.log('='.repeat(70));
+      await mongoose.disconnect();
+      process.exit(0);
     }
 
     // Handle --gen-logo mode: generate logo only

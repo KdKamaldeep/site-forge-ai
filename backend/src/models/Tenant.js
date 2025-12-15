@@ -19,6 +19,11 @@ const tenantSchema = new mongoose.Schema({
     default: null,
     trim: true
   },
+  favicon: {
+    type: String,
+    default: null,
+    trim: true
+  },
   themeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Theme',
