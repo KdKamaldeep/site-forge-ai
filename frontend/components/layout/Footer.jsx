@@ -45,7 +45,7 @@ export default function Footer({ navigation, tenant, categories = [], popularPos
         <div className={styles.footerColumn}>
           <h3 className={styles.footerLogo}>{formattedBrandName}</h3>
           <p className={styles.footerCopyright}>
-            © {currentYear} {formattedBrandName} | Made by DeoThemes
+            © {currentYear} {formattedBrandName} | Made by LavanyaVerse Team
           </p>
           <div className={styles.footerSocial}>
             <a href="#" aria-label="Facebook" className={styles.socialIcon} style={{ backgroundColor: '#1877f2' }}>
