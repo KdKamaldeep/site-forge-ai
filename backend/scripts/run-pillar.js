@@ -506,7 +506,7 @@ async function runPillarGeneration() {
     const tenantId = tenant._id.toString();
 
     // STEP 1: Generate logo if it doesn't exist (unless --gen-logo flag is set, which handles it separately)
-    if (!genLogo &&  process.env.GEMINI_API_KEY) {
+    if (!genLogo && !tenant.logo && process.env.GEMINI_API_KEY) {
       console.log(`\n🎨 STEP 1: Checking tenant logo...`);
       console.log('='.repeat(70));
       console.log(`📋 Tenant: ${tenant.name} (${tenant.domain})`);
