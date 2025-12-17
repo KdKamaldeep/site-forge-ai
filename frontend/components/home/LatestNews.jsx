@@ -80,7 +80,7 @@ export default function LatestNews({ articles, categories = [] }) {
                       <h3 className={styles.articleTitle}>{article.title}</h3>
                       <div className={styles.articleMeta}>
                         <span className={styles.byline}>
-                          BY {article.meta?.author?.name?.toUpperCase() || 'DEOTHEMES'}
+                          BY {article.meta?.author?.name?.toUpperCase() || 'LavanyaVerse'}
                         </span>
                         {article.updatedAt && (
                           <time className={styles.date}>

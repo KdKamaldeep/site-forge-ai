@@ -51,7 +51,7 @@ export default function Recommended({ articles }) {
                 <h4 className={styles.title}>{article.title}</h4>
                 <div className={styles.meta}>
                   <span className={styles.byline}>
-                    BY {article.meta?.author?.name?.toUpperCase() || 'DEOTHEMES'}
+                    BY {article.meta?.author?.name?.toUpperCase() || 'LavanyaVerse'}
                   </span>
                   {article.updatedAt && (
                     <time className={styles.date}>
