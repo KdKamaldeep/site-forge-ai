@@ -127,7 +127,7 @@ export default function Footer({ navigation, tenant, categories = [], popularPos
                   <div className={styles.popularContent}>
                     <h5 className={styles.popularTitle}>{formatTitle(post.title)}</h5>
                     <div className={styles.popularMeta}>
-                      BY {post.meta?.author?.name?.toUpperCase() || 'DEOTHEMES'} -{' '}
+                      BY {post.meta?.author?.name?.toUpperCase() || 'LavanyaVerse'} -{' '}
                       {post.updatedAt && new Date(post.updatedAt).toLocaleDateString('en-US', { 
                         month: 'short', 
                         day: 'numeric', 
