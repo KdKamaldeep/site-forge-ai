@@ -505,9 +505,27 @@ async function runPillarGeneration() {
 
     const tenantId = tenant._id.toString();
 
-    // STEP 1: Generate logo if it doesn't exist (unless --gen-logo flag is set, which handles it separately)
-    if (!genLogo && !tenant.logo && process.env.GEMINI_API_KEY) {
-      console.log(`\n🎨 STEP 1: Checking tenant logo...`);
+    // Check if this is a new tenant (has no pages)
+    const allPages = await PageService.getAllPagesForTenant(tenantId, true);
+    const isNewTenant = allPages.length === 0;
+    
+    if (isNewTenant) {
+      console.log(`\n🆕 NEW TENANT DETECTED: Auto-generating logo, favicon, and standalone pages...`);
+      console.log('='.repeat(70));
+    } else {
+      console.log(`\n📋 EXISTING TENANT: Will honor flags (--gen-logo, --gen-favicon, etc.)`);
+      console.log('='.repeat(70));
+    }
+
+    // STEP 1: Logo generation
+    // For new tenants: Always generate logo if missing (unless --gen-logo flag is set, which handles it separately)
+    // For existing tenants: Only if --gen-logo flag is set OR logo doesn't exist (and no flag)
+    const shouldGenerateLogo = isNewTenant 
+      ? (!tenant.logo && process.env.GEMINI_API_KEY && !genLogo)
+      : (!genLogo && !tenant.logo && process.env.GEMINI_API_KEY);
+    
+    if (shouldGenerateLogo) {
+      console.log(`\n🎨 STEP 1: Generating logo for tenant...`);
       console.log('='.repeat(70));
       console.log(`📋 Tenant: ${tenant.name} (${tenant.domain})`);
       console.log(`   Logo: ${tenant.logo || 'Not set'}`);
@@ -540,17 +558,56 @@ async function runPillarGeneration() {
     } else if (!tenant.logo && !process.env.GEMINI_API_KEY) {
       console.log(`\n⚠️  Tenant has no logo and GEMINI_API_KEY is not set`);
       console.log(`   Skipping logo generation. Set GEMINI_API_KEY to auto-generate logos.\n`);
-    } else if (tenant.logo) {
+    } else if (tenant.logo && !isNewTenant) {
       console.log(`\n✅ Tenant already has a logo: ${tenant.logo}\n`);
     }
 
-    // Handle --gen-favicon mode: generate favicon only
-    if (genFavicon) {
+    // STEP 1.5: Favicon generation for new tenants (after logo)
+    // For new tenants: Always generate favicon if logo exists
+    // For existing tenants: Only if --gen-favicon flag is set
+    const shouldGenerateFavicon = isNewTenant 
+      ? (tenant.logo && !tenant.favicon)
+      : genFavicon;
+    
+    if (shouldGenerateFavicon && !genFavicon) {
+      // Re-fetch tenant to get updated logo
+      const tenantWithLogo = await TenantService.getTenantById(tenantId);
+      
+      if (tenantWithLogo && tenantWithLogo.logo && !tenantWithLogo.favicon) {
+        console.log(`\n🎨 STEP 1.5: Generating favicon for tenant...`);
+        console.log('='.repeat(70));
+        
+        try {
+          const faviconUrl = await FaviconService.generateFavicons(tenantWithLogo);
+          
+          if (faviconUrl) {
+            tenantWithLogo.favicon = faviconUrl;
+            await tenantWithLogo.save();
+            console.log(`✅ Favicon generated and saved successfully!`);
+            console.log(`   Favicon URL: ${faviconUrl}`);
+            tenant.favicon = faviconUrl;
+          } else {
+            console.warn(`⚠️  Failed to generate favicon (will continue without favicon)`);
+          }
+        } catch (error) {
+          console.warn(`⚠️  Error generating favicon (non-blocking):`, error.message);
+          console.log(`   Continuing with pillar generation...`);
+        }
+        console.log('='.repeat(70) + '\n');
+      }
+    }
+
+    // Handle --gen-favicon mode: generate favicon only (for existing tenants)
+    // For new tenants, we generate everything automatically, so skip early exit
+    if (genFavicon && !isNewTenant) {
       console.log(`\n🎨 FAVICON GENERATION MODE: Generating favicons for tenant`);
       console.log('='.repeat(70));
       console.log(`📋 Tenant: ${tenant.name} (${tenant.domain})`);
       
-      if (!tenant.logo) {
+      // Re-fetch tenant to get latest logo
+      const tenantForFavicon = await TenantService.getTenantById(tenantId);
+      
+      if (!tenantForFavicon || !tenantForFavicon.logo) {
         console.error('❌ Tenant has no logo. Cannot generate favicon without logo.');
         console.error('   Please generate a logo first using --gen-logo or set a logo manually');
         await mongoose.disconnect();
@@ -558,7 +615,7 @@ async function runPillarGeneration() {
       }
       
       try {
-        const faviconUrl = await FaviconService.generateFavicons(tenant);
+        const faviconUrl = await FaviconService.generateFavicons(tenantForFavicon);
         
         if (faviconUrl) {
           // Update tenant with generated favicon
@@ -581,10 +638,40 @@ async function runPillarGeneration() {
       console.log('='.repeat(70));
       await mongoose.disconnect();
       process.exit(0);
+    } else if (genFavicon && isNewTenant) {
+      // For new tenants with --gen-favicon flag, generate favicon but continue with other setup
+      console.log(`\n🎨 Generating favicon for new tenant (--gen-favicon flag detected)...`);
+      console.log('='.repeat(70));
+      
+      // Re-fetch tenant to get latest logo
+      const tenantForFavicon = await TenantService.getTenantById(tenantId);
+      
+      if (!tenantForFavicon || !tenantForFavicon.logo) {
+        console.warn('⚠️  Tenant has no logo. Cannot generate favicon without logo.');
+        console.warn('   Logo will be generated first, then favicon.');
+      } else {
+        try {
+          const faviconUrl = await FaviconService.generateFavicons(tenantForFavicon);
+          
+          if (faviconUrl) {
+            tenantForFavicon.favicon = faviconUrl;
+            await tenantForFavicon.save();
+            console.log(`✅ Favicon generated and saved successfully!`);
+            console.log(`   Favicon URL: ${faviconUrl}`);
+            tenant.favicon = faviconUrl;
+          } else {
+            console.warn(`⚠️  Failed to generate favicon`);
+          }
+        } catch (error) {
+          console.warn(`⚠️  Error generating favicon:`, error.message);
+        }
+      }
+      console.log('='.repeat(70) + '\n');
     }
 
-    // Handle --gen-logo mode: generate logo only
-    if (genLogo) {
+    // Handle --gen-logo mode: generate logo only (for existing tenants)
+    // For new tenants, we generate everything automatically, so skip early exit
+    if (genLogo && !isNewTenant) {
       console.log(`\n🎨 LOGO GENERATION MODE: Generating logo for tenant`);
       console.log('='.repeat(70));
       console.log(`📋 Tenant: ${tenant.name} (${tenant.domain})`);
@@ -626,10 +713,44 @@ async function runPillarGeneration() {
       await mongoose.disconnect();
       console.log('👋 Disconnected from MongoDB\n');
       process.exit(0);
+    } else if (genLogo && isNewTenant) {
+      // For new tenants with --gen-logo flag, generate logo but continue with other setup
+      console.log(`\n🎨 Generating logo for new tenant (--gen-logo flag detected)...`);
+      console.log('='.repeat(70));
+      
+      if (!process.env.GEMINI_API_KEY) {
+        console.error('❌ GEMINI_API_KEY environment variable is not set');
+        console.error('   Logo generation requires Gemini API key');
+        await mongoose.disconnect();
+        process.exit(1);
+      }
+
+      try {
+        const logoUrl = await LogoService.generateLogoWithRetry(tenant, 2);
+        
+        if (logoUrl) {
+          const updatedTenant = await TenantService.getTenantById(tenantId);
+          if (updatedTenant) {
+            updatedTenant.logo = logoUrl;
+            await updatedTenant.save();
+            console.log(`✅ Logo generated and saved successfully!`);
+            console.log(`   Logo URL: ${logoUrl}`);
+            tenant.logo = logoUrl;
+          } else {
+            console.error('❌ Could not update tenant with logo');
+          }
+        } else {
+          console.error(`❌ Failed to generate logo after retries`);
+        }
+      } catch (error) {
+        console.error(`❌ Error generating logo:`, error.message);
+      }
+      console.log('='.repeat(70) + '\n');
     }
 
-    // Handle --standalonePagesOnly mode: generate standalone pages only
-    if (standalonePagesOnly) {
+    // Handle --standalonePagesOnly mode: generate standalone pages only (for existing tenants)
+    // For new tenants, we generate everything automatically, so skip early exit
+    if (standalonePagesOnly && !isNewTenant) {
       console.log(`\n📄 STANDALONE PAGES MODE: Generating standalone pages only`);
       console.log('='.repeat(70));
       console.log(`📋 Tenant: ${tenant.name} (${tenant.domain})`);
@@ -732,14 +853,79 @@ async function runPillarGeneration() {
       await mongoose.disconnect();
       console.log('👋 Disconnected from MongoDB\n');
       process.exit(0);
+    } else if (standalonePagesOnly && isNewTenant) {
+      // For new tenants with --standalonePagesOnly flag, generate standalone pages but continue with other setup
+      console.log(`\n📄 Generating standalone pages for new tenant (--standalonePagesOnly flag detected)...`);
+      console.log('='.repeat(70));
+      
+      const fullTenant = await TenantService.getTenantById(tenantId);
+      
+      if (fullTenant && fullTenant.standalonePages && fullTenant.standalonePages.length > 0) {
+        const enabledStandalonePages = fullTenant.standalonePages.filter(sp => sp.enabled !== false);
+        console.log(`   Found ${enabledStandalonePages.length} enabled standalone page(s) to generate\n`);
+        
+        for (const standalonePage of enabledStandalonePages) {
+          try {
+            const existingPage = await PageService.getPageBySlug(tenantId, standalonePage.slug);
+            
+            if (existingPage && existingPage.isStandalone) {
+              console.log(`   ⏭️  Skipping "${standalonePage.title}" (already exists)`);
+              continue;
+            }
+            
+            console.log(`   📝 Generating "${standalonePage.title}" (${standalonePage.pageType})...`);
+            const result = await MicrositeBuilderAgent.buildMicrosite(tenantId, [standalonePage.title], { 
+              skipImages: true,
+              standalonePageType: standalonePage.pageType
+            });
+            
+            if (result.pages && result.pages.length > 0) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+              let pageToUpdate = await PageService.getPageBySlug(tenantId, standalonePage.slug);
+              
+              if (!pageToUpdate) {
+                const allPages = await PageService.getAllPagesForTenant(tenantId, true);
+                pageToUpdate = allPages.find(p => 
+                  p.title && p.title.toLowerCase() === standalonePage.title.toLowerCase()
+                );
+              }
+              
+              if (pageToUpdate) {
+                const updateData = {
+                  isStandalone: true,
+                  standalonePageType: standalonePage.pageType,
+                  categoryKey: null,
+                  primaryKeyword: null
+                };
+                
+                if (pageToUpdate.slug !== standalonePage.slug) {
+                  updateData.slug = standalonePage.slug;
+                }
+                
+                await PageService.updatePage(pageToUpdate._id, updateData);
+                console.log(`   ✅ Created standalone page: "${standalonePage.title}" (slug: ${standalonePage.slug})`);
+              }
+            }
+          } catch (error) {
+            console.error(`   ❌ Error generating "${standalonePage.title}":`, error.message);
+          }
+        }
+      }
+      console.log('='.repeat(70) + '\n');
     }
 
     console.log(`✅ Found tenant: ${tenant.name} (${tenant.domain})`);
 
-    // STEP 2: Generate standalone pages if they don't exist (only in normal mode)
+    // STEP 2: Generate standalone pages
+    // For new tenants: Always generate standalone pages
+    // For existing tenants: Only in normal mode (not with flags like --category, --slug, etc.)
+    const shouldGenerateStandalonePages = isNewTenant 
+      ? true
+      : (!targetSlug && !targetCategory && !genLogo && !standalonePagesOnly);
+    
     // Re-fetch tenant to ensure we have standalonePages field
     const fullTenantForStandalone = await TenantService.getTenantById(tenantId);
-    if (!targetSlug && !targetCategory && !genLogo && !standalonePagesOnly && fullTenantForStandalone?.standalonePages && fullTenantForStandalone.standalonePages.length > 0) {
+    if (shouldGenerateStandalonePages && fullTenantForStandalone?.standalonePages && fullTenantForStandalone.standalonePages.length > 0) {
       console.log(`\n📄 STEP 2: Generating standalone pages...`);
       console.log('='.repeat(70));
       
@@ -808,6 +994,9 @@ async function runPillarGeneration() {
       }
       
       console.log('='.repeat(70) + '\n');
+    } else if (isNewTenant && (!fullTenantForStandalone?.standalonePages || fullTenantForStandalone.standalonePages.length === 0)) {
+      console.log(`\n⚠️  New tenant has no standalone pages configured`);
+      console.log(`   Configure standalonePages in tenant.standalonePages array\n`);
     }
 
     // Handle --slug mode: regenerate a specific page

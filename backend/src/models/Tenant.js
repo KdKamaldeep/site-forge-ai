@@ -102,7 +102,7 @@ const tenantSchema = new mongoose.Schema({
     language: { type: String, default: 'en', enum: ['en', 'hi', 'pa', 'es', 'fr', 'de', 'zh', 'ja', 'other'] },
     country: { type: String, trim: true, default: 'Global' },
     region: { type: String, trim: true, default: null },
-    tone: { type: String, default: 'friendly', enum: ['practical', 'friendly', 'expert', 'professional', 'casual', 'authoritative', 'conversational'] }
+    tone: { type: String, default: 'friendly', enum: ['practical', 'friendly', 'expert', 'professional', 'casual', 'authoritative', 'conversational','supportive'] }
   },
   // Navigation structure (explicit, not AI-generated)
   navigation: [{

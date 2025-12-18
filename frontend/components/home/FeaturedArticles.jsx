@@ -125,7 +125,7 @@ export default function FeaturedArticles({ articles }) {
                     <h2 className={styles.largeTitle}>{rightArticle.title}</h2>
                     <div className={styles.largeMeta}>
                       <span className={styles.byline}>
-                        BY {rightArticle.meta?.author?.name?.toUpperCase() || 'DEOTHEMES'}
+                        BY {rightArticle.meta?.author?.name?.toUpperCase() || 'LavanyaVerse'}
                       </span>
                       {rightArticle.updatedAt && (
                         <time className={styles.date}>
