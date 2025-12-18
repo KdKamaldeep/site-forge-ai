@@ -59,6 +59,7 @@ function generateRelatedPagesItems(relatedPages, currentPageSlug) {
 
 /**
  * Add relatedPages section to uxLayout
+ * Removes any existing relatedPages sections first, then creates a new one
  */
 function addRelatedPagesSection(uxLayout, relatedPages, currentPageSlug) {
   // Ensure uxLayout structure exists
@@ -77,44 +78,22 @@ function addRelatedPagesSection(uxLayout, relatedPages, currentPageSlug) {
     return uxLayout;
   }
 
-  // Check if relatedPages section already exists
-  const existingRelatedPagesIndex = uxLayout.sections.findIndex(section => section.type === 'relatedPages');
-
-  if (existingRelatedPagesIndex === -1) {
-    // Create new relatedPages section at the end
-    uxLayout.sections.push({
-      type: 'relatedPages',
-      title: 'Related Articles',
-      items: relatedPagesItems
-    });
-    console.log(`   ✅ Created new relatedPages section with ${relatedPagesItems.length} pages`);
-  } else {
-    // Update existing relatedPages section
-    const existingRelatedPages = uxLayout.sections[existingRelatedPagesIndex];
-    if (!existingRelatedPages.items) {
-      existingRelatedPages.items = [];
-    }
-
-    // Check if pages already exist (by slug)
-    const existingSlugs = new Set(
-      existingRelatedPages.items
-        .map(item => item.slug || item.href?.replace(/^\//, ''))
-        .filter(Boolean)
-    );
-
-    // Add only new pages
-    const newItemsToAdd = relatedPagesItems.filter(item => {
-      const slug = item.slug || item.href?.replace(/^\//, '');
-      return slug && !existingSlugs.has(slug);
-    });
-
-    if (newItemsToAdd.length > 0) {
-      existingRelatedPages.items = [...existingRelatedPages.items, ...newItemsToAdd];
-      console.log(`   ✅ Added ${newItemsToAdd.length} new pages to existing relatedPages section (total: ${existingRelatedPages.items.length} items)`);
-    } else {
-      console.log('   ℹ️  All pages already exist in relatedPages section');
-    }
+  // Remove all existing relatedPages sections
+  const beforeCount = uxLayout.sections.length;
+  uxLayout.sections = uxLayout.sections.filter(section => section.type !== 'relatedPages');
+  const removedCount = beforeCount - uxLayout.sections.length;
+  
+  if (removedCount > 0) {
+    console.log(`   🗑️  Removed ${removedCount} existing relatedPages section(s)`);
   }
+
+  // Create new relatedPages section at the end
+  uxLayout.sections.push({
+    type: 'relatedPages',
+    title: 'Related Articles',
+    items: relatedPagesItems
+  });
+  console.log(`   ✅ Created new relatedPages section with ${relatedPagesItems.length} pages`);
 
   return uxLayout;
 }
@@ -181,10 +160,13 @@ async function processPage(page, tenantId, categoryKey) {
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args.length < 2) {
-    console.error('❌ Usage: node scripts/add-internal-links-to-faq.js <tenantId> <category> [slug]');
+  if (args.length < 1) {
+    console.error('❌ Usage: node scripts/add-internal-links-to-faq.js <tenantId> [category] [slug]');
     console.error('');
     console.error('Examples:');
+    console.error('  # Process all categories for a tenant');
+    console.error('  node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011');
+    console.error('');
     console.error('  # Process all pages in a category');
     console.error('  node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011 nutrition');
     console.error('');
@@ -206,7 +188,106 @@ async function main() {
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
-    // Get pages to process
+    // If no category provided, process all categories
+    if (!categoryKey) {
+      console.log('\n🎯 Processing all categories for tenant');
+      
+      // Get tenant to find all categories
+      const tenant = await TenantService.getTenantById(tenantId);
+      if (!tenant) {
+        console.error(`❌ Tenant not found: ${tenantId}`);
+        process.exit(1);
+      }
+
+      // Get all categories from contentPillars
+      const categories = tenant.contentPillars?.map(pillar => pillar.categoryKey).filter(Boolean) || [];
+      
+      if (categories.length === 0) {
+        console.error(`❌ No categories found for tenant ${tenantId}`);
+        process.exit(1);
+      }
+
+      console.log(`   Found ${categories.length} categories: ${categories.join(', ')}`);
+
+      // Process each category
+      const allResults = [];
+      for (const catKey of categories) {
+        console.log(`\n${'='.repeat(60)}`);
+        console.log(`📂 Processing category: ${catKey}`);
+        console.log('='.repeat(60));
+
+        // Get all pages in this category
+        const categoryPages = await Page.find({
+          tenantId: new mongoose.Types.ObjectId(tenantId),
+          categoryKey: catKey,
+          isStandalone: { $ne: true }
+        }).lean();
+
+        if (categoryPages.length === 0) {
+          console.log(`   ⚠️  No pages found in category "${catKey}", skipping...`);
+          continue;
+        }
+
+        console.log(`   Found ${categoryPages.length} pages in category "${catKey}"`);
+
+        // Process each page in this category
+        for (const page of categoryPages) {
+          const result = await processPage(page, tenantId, catKey);
+          allResults.push({
+            categoryKey: catKey,
+            pageId: page._id,
+            slug: page.slug,
+            title: page.title,
+            ...result
+          });
+        }
+      }
+
+      // Summary for all categories
+      console.log('\n' + '='.repeat(60));
+      console.log('📊 FINAL SUMMARY (All Categories)');
+      console.log('='.repeat(60));
+      
+      const successful = allResults.filter(r => r.success);
+      const failed = allResults.filter(r => !r.success);
+      const withChanges = allResults.filter(r => r.success && !r.noChange);
+
+      console.log(`Total pages processed: ${allResults.length}`);
+      console.log(`✅ Successful: ${successful.length}`);
+      console.log(`❌ Failed: ${failed.length}`);
+      console.log(`📝 Pages updated: ${withChanges.length}`);
+
+      // Summary by category
+      const byCategory = {};
+      allResults.forEach(r => {
+        if (!byCategory[r.categoryKey]) {
+          byCategory[r.categoryKey] = { total: 0, successful: 0, failed: 0, updated: 0 };
+        }
+        byCategory[r.categoryKey].total++;
+        if (r.success) byCategory[r.categoryKey].successful++;
+        else byCategory[r.categoryKey].failed++;
+        if (r.success && !r.noChange) byCategory[r.categoryKey].updated++;
+      });
+
+      console.log('\n📊 Summary by Category:');
+      Object.entries(byCategory).forEach(([cat, stats]) => {
+        console.log(`  ${cat}: ${stats.successful}/${stats.total} successful, ${stats.updated} updated`);
+      });
+
+      if (failed.length > 0) {
+        console.log('\nFailed pages:');
+        failed.forEach(r => {
+          console.log(`  - [${r.categoryKey}] ${r.title} (${r.slug}): ${r.error || r.reason}`);
+        });
+      }
+
+      console.log('\n✅ Script completed');
+      await mongoose.disconnect();
+      console.log('👋 Disconnected from MongoDB');
+      return;
+    }
+
+    // Get pages to process (category was provided)
     let pagesToProcess = [];
 
     if (slug) {
