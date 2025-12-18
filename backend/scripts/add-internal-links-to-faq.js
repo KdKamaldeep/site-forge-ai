@@ -48,11 +48,12 @@ function generateRelatedPagesItems(relatedPages, currentPageSlug) {
     return [];
   }
 
-  // Generate related pages items with title and slug
+  // Generate related pages items with title, slug, categoryKey, and full href path
   return linksToAdd.map(page => ({
     title: page.title,
     slug: page.slug,
-    href: `/${page.slug}`
+    categoryKey: page.categoryKey || '',
+    href: page.categoryKey ? `/${page.categoryKey}/${page.slug}` : `/${page.slug}`
   }));
 }
 
@@ -127,11 +128,16 @@ async function processPage(page, tenantId, categoryKey) {
 
     // Get all pages in the same category (excluding standalone pages)
     const allPages = await PageService.getAllPagesForTenant(tenantId, false);
-    const categoryPages = allPages.filter(p => 
-      p.categoryKey === categoryKey && 
-      !p.isStandalone &&
-      p._id.toString() !== page._id.toString()
-    );
+    const categoryPages = allPages
+      .filter(p => 
+        p.categoryKey === categoryKey && 
+        !p.isStandalone &&
+        p._id.toString() !== page._id.toString()
+      )
+      .map(p => ({
+        ...p,
+        categoryKey: p.categoryKey || categoryKey // Ensure categoryKey is included
+      }));
 
     console.log(`   Found ${categoryPages.length} related pages in category "${categoryKey}"`);
 

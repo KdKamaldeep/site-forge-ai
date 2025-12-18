@@ -5,6 +5,7 @@
 
 import styles from './ux-components.module.css';
 import Link from 'next/link';
+import { formatTitle } from '@/lib/textFormat';
 
 export default function RelatedPages({ title = 'Related Articles', items = [] }) {
   if (!items || items.length === 0) {
@@ -13,13 +14,19 @@ export default function RelatedPages({ title = 'Related Articles', items = [] })
 
   return (
     <section className={styles.relatedPagesSection}>
-      {title && <h2 className={styles.relatedPagesTitle}>{title}</h2>}
+      <h2 className={styles.relatedPagesTitle}>{title}</h2>
       <div className={styles.relatedPagesList}>
         {items.map((item, index) => {
-          // Extract slug from href if it's a string, or use item.slug
-          let href = item.href || item.slug || '';
-          if (href && !href.startsWith('/')) {
-            href = `/${href}`;
+          // Use href if provided, otherwise construct from category and slug
+          let href = item.href || '';
+          if (!href && item.categoryKey && item.slug) {
+            href = `/${item.categoryKey}/${item.slug}`;
+          } else if (!href && item.slug) {
+            href = `/${item.slug}`;
+          }
+          
+          if (!href || !href.startsWith('/')) {
+            href = href ? `/${href}` : '';
           }
           
           const pageTitle = item.title || '';
@@ -31,7 +38,7 @@ export default function RelatedPages({ title = 'Related Articles', items = [] })
           return (
             <div key={index} className={styles.relatedPageItem}>
               <Link href={href} className={styles.relatedPageLink}>
-                {pageTitle}
+                {formatTitle(pageTitle)}
               </Link>
             </div>
           );
