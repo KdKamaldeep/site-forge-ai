@@ -10,3 +10,5 @@ node scripts/run-pillar.js SmartHomeTricks.com --count 3
 node scripts/run-pillar.js SmartHomeTricks.com --slug how-to-use-ai
 
 node scripts/run-pillar.js SmartHomeTricks.com --category technology
+
+node scripts/add-internal-links-to-faq.js <tenantId> <category> [slug]

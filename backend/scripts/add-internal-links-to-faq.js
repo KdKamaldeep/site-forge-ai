@@ -1,5 +1,5 @@
 /**
- * Script to generate internal links and append them to FAQ sections
+ * Script to generate related pages and append them as a relatedPages section
  * 
  * Usage:
  *   node scripts/add-internal-links-to-faq.js <tenantId> <category> [slug]
@@ -29,12 +29,15 @@ import Page from '../src/models/Page.js';
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/microsite-empire';
 
 /**
- * Generate internal links as FAQ items for related pages
+ * Generate related pages items (3-4 links max)
  */
-function generateInternalLinksAsFAQ(relatedPages, currentPageSlug, maxLinks = 5) {
+function generateRelatedPagesItems(relatedPages, currentPageSlug) {
   if (!relatedPages || relatedPages.length === 0) {
     return [];
   }
+
+  // Randomly choose between 3-4 links max
+  const maxLinks = Math.floor(Math.random() * 2) + 3; // Returns 3 or 4
 
   // Filter out current page and limit to maxLinks
   const linksToAdd = relatedPages
@@ -45,17 +48,18 @@ function generateInternalLinksAsFAQ(relatedPages, currentPageSlug, maxLinks = 5)
     return [];
   }
 
-  // Generate FAQ items for each related page
+  // Generate related pages items with title and slug
   return linksToAdd.map(page => ({
-    question: `Learn more about ${page.title}`,
-    answer: `<p>Read our comprehensive guide: <a href="/${page.slug}">${page.title}</a></p>`
+    title: page.title,
+    slug: page.slug,
+    href: `/${page.slug}`
   }));
 }
 
 /**
- * Add internal links to FAQ section of a page
+ * Add relatedPages section to uxLayout
  */
-function addLinksToFAQSection(uxLayout, relatedPages, currentPageSlug) {
+function addRelatedPagesSection(uxLayout, relatedPages, currentPageSlug) {
   // Ensure uxLayout structure exists
   if (!uxLayout) {
     uxLayout = { sections: [] };
@@ -64,55 +68,50 @@ function addLinksToFAQSection(uxLayout, relatedPages, currentPageSlug) {
     uxLayout.sections = [];
   }
 
-  // Generate FAQ items from related pages
-  const newFAQItems = generateInternalLinksAsFAQ(relatedPages, currentPageSlug);
+  // Generate related pages items
+  const relatedPagesItems = generateRelatedPagesItems(relatedPages, currentPageSlug);
 
-  if (newFAQItems.length === 0) {
+  if (relatedPagesItems.length === 0) {
     console.log('   ⚠️  No related pages found to link to');
     return uxLayout;
   }
 
-  // Find existing FAQ section
-  let faqSectionIndex = uxLayout.sections.findIndex(section => section.type === 'faq');
+  // Check if relatedPages section already exists
+  const existingRelatedPagesIndex = uxLayout.sections.findIndex(section => section.type === 'relatedPages');
 
-  if (faqSectionIndex === -1) {
-    // Create new FAQ section at the end
+  if (existingRelatedPagesIndex === -1) {
+    // Create new relatedPages section at the end
     uxLayout.sections.push({
-      type: 'faq',
+      type: 'relatedPages',
       title: 'Related Articles',
-      items: newFAQItems
+      items: relatedPagesItems
     });
-    console.log(`   ✅ Created new FAQ section with ${newFAQItems.length} links`);
+    console.log(`   ✅ Created new relatedPages section with ${relatedPagesItems.length} pages`);
   } else {
-    // Append to existing FAQ section
-    const existingFAQ = uxLayout.sections[faqSectionIndex];
-    if (!existingFAQ.items) {
-      existingFAQ.items = [];
+    // Update existing relatedPages section
+    const existingRelatedPages = uxLayout.sections[existingRelatedPagesIndex];
+    if (!existingRelatedPages.items) {
+      existingRelatedPages.items = [];
     }
 
-    // Check if links already exist (by slug)
+    // Check if pages already exist (by slug)
     const existingSlugs = new Set(
-      existingFAQ.items
-        .map(item => {
-          // Extract slug from existing links
-          const match = item.answer?.match(/href="\/([^"]+)"/);
-          return match ? match[1] : null;
-        })
+      existingRelatedPages.items
+        .map(item => item.slug || item.href?.replace(/^\//, ''))
         .filter(Boolean)
     );
 
-    // Add only new links
-    const newItemsToAdd = newFAQItems.filter(item => {
-      const match = item.answer.match(/href="\/([^"]+)"/);
-      const slug = match ? match[1] : null;
+    // Add only new pages
+    const newItemsToAdd = relatedPagesItems.filter(item => {
+      const slug = item.slug || item.href?.replace(/^\//, '');
       return slug && !existingSlugs.has(slug);
     });
 
     if (newItemsToAdd.length > 0) {
-      existingFAQ.items = [...existingFAQ.items, ...newItemsToAdd];
-      console.log(`   ✅ Added ${newItemsToAdd.length} new links to existing FAQ section (total: ${existingFAQ.items.length} items)`);
+      existingRelatedPages.items = [...existingRelatedPages.items, ...newItemsToAdd];
+      console.log(`   ✅ Added ${newItemsToAdd.length} new pages to existing relatedPages section (total: ${existingRelatedPages.items.length} items)`);
     } else {
-      console.log('   ℹ️  All links already exist in FAQ section');
+      console.log('   ℹ️  All pages already exist in relatedPages section');
     }
   }
 
@@ -144,8 +143,8 @@ async function processPage(page, tenantId, categoryKey) {
     // Get or create uxLayout from the page object (already has all data)
     let uxLayout = page.uxLayout || { sections: [] };
     
-    // Add internal links to FAQ section
-    const updatedUXLayout = addLinksToFAQSection(
+    // Add relatedPages section
+    const updatedUXLayout = addRelatedPagesSection(
       JSON.parse(JSON.stringify(uxLayout)), // Deep clone
       categoryPages,
       page.slug

@@ -11,7 +11,8 @@ const VALID_SECTION_TYPES = [
   'imageBlock',
   'featureList',
   'comparisonTable',
-  'faq'
+  'faq',
+  'relatedPages'
 ];
 
 const VALID_LAYOUTS = [
@@ -96,6 +97,20 @@ export function validateUXLayout(uxLayout) {
               }
               if (!item.answer) {
                 errors.push(`Section ${index} (faq), item ${itemIndex}: answer is required`);
+              }
+            });
+          }
+          break;
+        case 'relatedPages':
+          if (!section.items || !Array.isArray(section.items)) {
+            errors.push(`Section ${index} (relatedPages): items array is required`);
+          } else {
+            section.items.forEach((item, itemIndex) => {
+              if (!item.title) {
+                errors.push(`Section ${index} (relatedPages), item ${itemIndex}: title is required`);
+              }
+              if (!item.slug && !item.href) {
+                errors.push(`Section ${index} (relatedPages), item ${itemIndex}: slug or href is required`);
               }
             });
           }
