@@ -545,7 +545,7 @@ Return ONLY the JSON array, no markdown, no explanations.`;
         }
 
         // Grid items
-        if (section.type === 'grid' || section.type === 'featureList' && section.items && Array.isArray(section.items)) {
+        if (section.type === 'grid' && section.items && Array.isArray(section.items)) {
           console.log(`📊 Processing grid section with ${section.items.length} items`);
           newSection.items = await Promise.all(
             section.items.map(async (item, itemIndex) => {
