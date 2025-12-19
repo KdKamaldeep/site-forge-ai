@@ -526,7 +526,7 @@ Return ONLY the JSON array, no markdown, no explanations.`;
         const newSection = { ...section };
 
         // Hero
-        if (section.type === 'hero' && !section.image) {
+        if (section.type === 'hero') {
           const heroPrompt =
             (promptsByContext['hero'] && promptsByContext['hero'][0]) ||
             `${pageTitle} - professional hero image, modern design, high quality`;
@@ -545,30 +545,43 @@ Return ONLY the JSON array, no markdown, no explanations.`;
         }
 
         // Grid items
-        if (section.type === 'grid' && section.items && Array.isArray(section.items)) {
+        if (section.type === 'grid' || section.type === 'featureList' && section.items && Array.isArray(section.items)) {
+          console.log(`📊 Processing grid section with ${section.items.length} items`);
           newSection.items = await Promise.all(
-            section.items.map(async (item) => {
-              if (!item.image && item.title) {
-                const gridPrompt = `${item.title} - ${pageTitle} - professional image, clean design`;
+            section.items.map(async (item, itemIndex) => {
+              const newItem = { ...item }; // Create a new item object
+              const hasImage = false; //newItem.image && newItem.image.trim() !== '';
+              const hasTitle = newItem.title && newItem.title.trim() !== '';
+              
+              console.log(`   Grid item ${itemIndex + 1}: title="${newItem.title || 'N/A'}", hasImage=${hasImage}, image="${newItem.image || 'none'}"`);
+              
+              if (!hasImage && hasTitle) {
+                const gridPrompt = `${newItem.title} - ${pageTitle} - professional image, clean design`;
                 try {
-                  item.image = await this.generateImage(gridPrompt, {
+                  console.log(`📸 Generating grid image for: ${newItem.title}`);
+                  newItem.image = await this.generateImage(gridPrompt, {
                     width: 800,
                     height: 600,
                     style: tenant?.layoutStyle || 'professional',
                     tenantId: tenant?._id?.toString() || null,
                     provider: tenant?.imageProvider || 'imagen'
                   });
+                  console.log(`✅ Grid image generated for: ${newItem.title}`);
                 } catch (error) {
-                  console.error('Error generating grid image:', error);
+                  console.error(`❌ Error generating grid image for "${newItem.title}":`, error);
                 }
+              } else if (hasImage) {
+                console.log(`   ⏭️  Skipping grid image generation for "${newItem.title}" (already has image)`);
+              } else if (!hasTitle) {
+                console.log(`   ⏭️  Skipping grid image generation for item ${itemIndex + 1} (no title)`);
               }
-              return item;
+              return newItem;
             })
           );
         }
 
         // Image block
-        if (section.type === 'imageBlock' && !section.image) {
+        if (section.type === 'imageBlock') {
           let imagePrompt;
           if (promptsByContext['content'] && promptsByContext['content'].length > promptIndex) {
             imagePrompt = promptsByContext['content'][promptIndex];

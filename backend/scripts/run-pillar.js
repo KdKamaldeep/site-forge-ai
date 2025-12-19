@@ -1,19 +1,27 @@
 /**
- * CLI script to run pillar-based generation for ALL pillars
+ * CLI script to run pillar-based generation for ALL pillars or a specific category
  * 
- * This script goes through each content pillar/category one by one
- * and creates the specified number of pages for each pillar.
+ * This script can process all categories or a specific category
+ * and creates the specified number of pages for each pillar/category.
  * 
  * Usage:
- *   node scripts/run-pillar.js <domain> [--count 3] [--gen-logo] [--gen-favicon]
+ *   node scripts/run-pillar.js <domain> [--count N] [--category CATEGORY] [--gen-logo] [--gen-favicon]
  * 
- * Example:
+ * Examples:
+ *   # Process all categories (default)
  *   node scripts/run-pillar.js example.com
  *   node scripts/run-pillar.js example.com --count 3
+ * 
+ *   # Process specific category only
+ *   node scripts/run-pillar.js example.com --category nutrition --count 1
+ *   node scripts/run-pillar.js example.com --category fitness --count 5
+ * 
+ *   # Generate logo/favicon only
  *   node scripts/run-pillar.js example.com --gen-logo
  *   node scripts/run-pillar.js example.com --gen-favicon
  * 
- * This will create 3 pages for each pillar/category in the tenant's contentPillars
+ * This will create the specified number of pages for each pillar/category
+ * (or only the specified category if --category is used)
  */
 
 import mongoose from 'mongoose';
@@ -434,9 +442,16 @@ async function runPillarGeneration() {
       console.error('❌ Usage: node scripts/run-pillar.js <domain> [--count N] [--category CATEGORY] [--slug SLUG] [--gen-logo] [--standalonePagesOnly]');
       console.error('');
       console.error('Examples:');
+      console.error('   # Process all categories (default)');
       console.error('   node scripts/run-pillar.js example.com');
       console.error('   node scripts/run-pillar.js example.com --count 3');
-      console.error('   node scripts/run-pillar.js example.com --category technology');
+      console.error('');
+      console.error('   # Process specific category only');
+      console.error('   node scripts/run-pillar.js example.com --category nutrition');
+      console.error('   node scripts/run-pillar.js example.com --category fitness --count 1');
+      console.error('   node scripts/run-pillar.js example.com --category technology --count 5');
+      console.error('');
+      console.error('   # Other options');
       console.error('   node scripts/run-pillar.js example.com --slug how-to-use-ai');
       console.error('   node scripts/run-pillar.js example.com --gen-logo');
       console.error('   node scripts/run-pillar.js example.com --standalonePagesOnly');

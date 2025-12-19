@@ -63,24 +63,7 @@ export class MicrositeBuilderAgent {
 
             // 2. Generate long-form content with E-E-A-T principles
             const contentData = await this.generateContentWithEAT(topic, keywords, tenant, { standalonePageType });
-
-            // 2.5. Process image placeholders in content and generate actual images
-            if (!skipImages && process.env.GEMINI_API_KEY) {
-              try {
-                console.log(`🖼️  Processing content images for: ${topic}`);
-                contentData.content = await ContentImageService.processContentImages(
-                  contentData.content,
-                  topic,
-                  tenant
-                );
-              } catch (error) {
-                console.warn(`⚠️  Content image processing failed:`, error.message);
-                // Continue without images
-              }
-            } else if (skipImages) {
-              console.log(`⏭️  Skipping image generation for: ${topic}`);
-            }
-
+            
             // 3. Validate content quality
             const qualityCheck = ContentQualityValidator.validateContent(
               contentData.content,
@@ -102,6 +85,7 @@ export class MicrositeBuilderAgent {
 
             // 4. Generate UX Layout with tenant-specific style (skip for standalone pages)
             let uxLayout = null;
+            let layoutWithImages = null;
             let optimizedLayout = null;
             
             if (!standalonePageType) {
@@ -110,8 +94,29 @@ export class MicrositeBuilderAgent {
                 tenant.layoutStyle || 'standard',
                 tenant
               );
-              // 5. Optimize images in layout
-              optimizedLayout = ImageOptimizationService.optimizeLayoutImages(uxLayout);
+
+              // 5. Generate images for the layout using Gemini
+              layoutWithImages = uxLayout;
+              if (!skipImages && process.env.GEMINI_API_KEY) {
+                try {
+                  console.log(`📸 Generating images for page: ${topic}`);
+                  layoutWithImages = await GeminiImageService.generateLayoutImages(
+                    uxLayout,
+                    topic,
+                    tenant,
+                    contentData.content // Pass content to extract image prompts
+                  );
+                } catch (error) {
+                  console.warn(`⚠️  Image generation failed for "${topic}":`, error.message);
+                  // Continue without images if generation fails
+                  layoutWithImages = uxLayout;
+                }
+              } else if (skipImages) {
+                console.log(`⏭️  Skipping layout image generation for: ${topic}`);
+              }
+
+              // 6. Optimize images in layout
+              optimizedLayout = ImageOptimizationService.optimizeLayoutImages(layoutWithImages);
             } else {
               console.log(`⏭️  Skipping UX layout generation for standalone page: ${topic}`);
             }
@@ -162,23 +167,6 @@ export class MicrositeBuilderAgent {
 
             // 2. Generate long-form content with E-E-A-T principles
             const contentData = await this.generateContentWithEAT(topic, keywords, tenant, { standalonePageType });
-
-            // 2.5. Process image placeholders in content and generate actual images
-            if (!skipImages && process.env.GEMINI_API_KEY) {
-              try {
-                console.log(`🖼️  Processing content images for: ${topic}`);
-                contentData.content = await ContentImageService.processContentImages(
-                  contentData.content,
-                  topic,
-                  tenant
-                );
-              } catch (error) {
-                console.warn(`⚠️  Content image processing failed:`, error.message);
-                // Continue without images
-              }
-            } else if (skipImages) {
-              console.log(`⏭️  Skipping image generation for: ${topic}`);
-            }
 
             // 3. Validate content quality
             const qualityCheck = ContentQualityValidator.validateContent(

@@ -43,6 +43,7 @@ CRITICAL: You MUST return a JSON object with this EXACT structure:
   "sections": [
     { "type": "hero", "title": "...", "subtitle": "...", "image": "..." },
     { "type": "paragraph", "text": "..." },
+    { "type": "grid", "columns": number (1-4), "items": Array<{title: string, text: string, image?: string}> },
     ...
   ]
 }
@@ -54,7 +55,7 @@ Available section types (use EXACTLY these type names):
 4. infoBox: { type: "infoBox", title: string, text: string, variant?: "info"|"warning"|"success" }
 5. cta: { type: "cta", text: string, link: string, variant?: "primary"|"secondary" }
 6. imageBlock: { type: "imageBlock", image: string, caption?: string }
-7. featureList: { type: "featureList", items: Array<{title: string, description: string}> }
+7. featureList: { type: "featureList", items: Array<{title: string, description: string, image: string}> }
 8. comparisonTable: { type: "comparisonTable", headers: string[], rows: Array<Array<string>> }
 9. faq: { type: "faq", title?: string, items: Array<{question: string, answer: string}> }
 
@@ -100,11 +101,22 @@ Example output format:
       "type": "hero",
       "title": "Main Title",
       "subtitle": "Subtitle text",
-      "image": "https://example.com/image.jpg"
+      "image": ""
     },
     {
       "type": "paragraph",
       "text": "Paragraph content here"
+    },
+    {
+      "type": "grid",
+      "columns": 3,
+      "items": [
+        {
+          "title": "Item 1",
+          "text": "Description 1",
+          "image": ""
+        }
+      ]
     }
   ]
 }`;
@@ -131,6 +143,7 @@ Example output format:
       let layout;
       try {
         layout = JSON.parse(jsonContent);
+        console.log('AI-generated layout:', layout);
       } catch (e) {
         console.error('Failed to parse AI-generated layout:', e);
         console.error('Raw response:', responseContent);
