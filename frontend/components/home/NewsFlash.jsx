@@ -60,28 +60,7 @@ export default function NewsFlash({ newsItems = [] }) {
         {/* CLS Prevention: Fixed line-height and no-wrap prevent text reflow */}
         <p className={styles.newsFlashText}>{currentItem}</p>
         {/* CLS Prevention: Always render controls container (hidden when not needed) to prevent layout shift */}
-        <div className={styles.newsFlashControls} style={{ visibility: hasMultipleItems ? 'visible' : 'hidden' }}>
-          <button 
-            className={styles.controlButton}
-            onClick={handlePrev}
-            aria-label="Previous news"
-            disabled={!hasMultipleItems}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-              <path d="M7.5 9L4.5 6l3-3"/>
-            </svg>
-          </button>
-          <button 
-            className={styles.controlButton}
-            onClick={handleNext}
-            aria-label="Next news"
-            disabled={!hasMultipleItems}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-              <path d="M4.5 3L7.5 6l-3 3"/>
-            </svg>
-          </button>
-        </div>
+       
       </div>
     </div>
   );
