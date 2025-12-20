@@ -56,6 +56,7 @@ export async function uploadToS3(buffer, key, contentType = 'image/png') {
       Key: key,
       Body: buffer,
       ContentType: contentType,
+      CacheControl: 'public, max-age=31536000, immutable',
       // Note: ACL is deprecated in newer S3 buckets
       // If your bucket has ACLs disabled, ensure bucket policy allows public read access
       // For buckets with ACLs enabled, uncomment the line below:

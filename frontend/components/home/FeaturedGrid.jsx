@@ -27,6 +27,9 @@ export default function FeaturedGrid({ articles = [] }) {
                 href={article.categoryKey ? `/${article.categoryKey}/${article.slug}` : `/${article.slug}`}
                 className={styles.featuredLink}
               >
+                {/* SEO Optimization: Title comes first in HTML for better Google crawling
+                    CSS order property will visually position title above image */}
+                <h3 className={styles.cardTitle}>{formatTitle(article.title)}</h3>
                 <div className={styles.imageWrapper}>
                   {/* LCP Optimization: First card (index 0) uses priority loading
                       - This is the LCP element, so it must load immediately with high priority
@@ -61,7 +64,6 @@ export default function FeaturedGrid({ articles = [] }) {
                     readingTime={article.readingTime}
                     showCategory={false}
                   />
-                  <h3 className={styles.cardTitle}>{formatTitle(article.title)}</h3>
                   {article.meta?.description && (
                     <p className={styles.excerpt}>
                       {getExcerpt(article.meta.description, 15)}

@@ -22,7 +22,8 @@
 .featuredLink {
   text-decoration: none;
   color: inherit;
-  display: block;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   transition: transform 0.2s;
 }
@@ -31,6 +32,8 @@
   transform: translateY(-2px);
 }
 
+/* SEO Optimization: Image visually appears first but comes after text in HTML
+    Using CSS order to maintain visual layout while improving SEO */
 .imageWrapper {
   position: relative;
   width: 100%;
@@ -39,6 +42,7 @@
   border-radius: 12px;
   margin-bottom: 1rem;
   background: #f3f4f6;
+  order: 2; /* Image appears after title in visual order */
 }
 
 .featuredImage {
@@ -64,24 +68,28 @@
   left: 0.75rem;
 }
 
+/* SEO Optimization: Content wrapper comes first in HTML for better crawling */
 .contentWrapper {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  order: 3; /* Meta and excerpt appear after image */
 }
 
+/* SEO Optimization: Title comes first in HTML for better Google crawling */
 .cardTitle {
   font-size: 1.125rem;
   font-weight: 600;
   line-height: 1.4;
   color: #1f2937;
-  margin: 0;
+  margin: 0 0 1rem 0; /* Add margin bottom to space from image */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: color 0.2s;
   text-transform: capitalize;
+  order: 1; /* Title appears first visually (and in HTML) */
 }
 
 /* No color change on hover - keep original color */
