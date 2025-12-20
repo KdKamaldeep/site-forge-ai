@@ -16,7 +16,7 @@
 }
 
 .breadcrumbs a {
-  color: var(--muted, #64748b);
+  color: var(--text, #334155);
   text-decoration: none;
   transition: color 0.15s ease;
 }
@@ -299,7 +299,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--muted, #64748b);
+  color: var(--text, #334155);
   margin-bottom: var(--spacing-md, 1.5rem);
 }
 
@@ -316,7 +316,7 @@
 .tocItem a {
   display: block;
   font-size: 0.875rem;
-  color: var(--muted, #64748b);
+  color: var(--text, #334155);
   text-decoration: none;
   padding: 0.25rem 0;
   transition: all 0.15s ease;
@@ -325,7 +325,7 @@
 
 .tocItem a:hover,
 .tocItem.tocActive a {
-  color: var(--muted, #64748b) !important; /* Keep same color on hover */
+  color: var(--text, #334155) !important; /* Keep same color on hover */
   text-decoration-color: currentColor !important; /* Underline matches text color - stays same */
   padding-left: 0.5rem;
 }

@@ -19,14 +19,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--muted, #64748b);
+  color: var(--text, #334155);
   margin: 0;
 }
 
 .scrollButton {
   background: none;
   border: none;
-  color: var(--muted, #64748b);
+  color: var(--text, #334155);
   cursor: pointer;
   padding: 0.25rem;
   display: flex;

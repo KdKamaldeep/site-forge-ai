@@ -28,7 +28,7 @@
 
 .viewAllLink {
   font-size: 0.875rem;
-  color: var(--muted, #64748b);
+  color: var(--text, #334155);
   text-decoration: none;
   transition: color 0.2s;
 }
