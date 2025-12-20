@@ -1,8 +1,12 @@
+/* CLS Prevention: Fixed height ensures stable layout on first paint and hydration */
 .newsFlash {
   background: #f9fafb;
   color: #374151;
   padding: 0.5rem 0;
   border-bottom: 1px solid #e5e7eb;
+  height: 48px; /* Fixed height: 0.5rem top + 0.5rem bottom + ~40px content = 48px */
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
 .newsFlashContent {
@@ -12,6 +16,7 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  height: 100%; /* Fill parent height to ensure vertical centering */
 }
 
 .newsFlashButton {
@@ -39,18 +44,21 @@
   flex-shrink: 0;
 }
 
+/* CLS Prevention: Fixed line-height prevents font swap from changing height */
 .newsFlashText {
   flex: 1;
   font-size: 0.8125rem;
-  line-height: 1.5;
+  line-height: 1.5; /* Locked: 0.8125rem * 1.5 = ~1.22rem per line */
   margin: 0;
   color: #4b5563;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-transform: capitalize;
+  min-height: 1.5em; /* Reserve space for one line */
 }
 
+/* CLS Prevention: Fixed width reserves space even when hidden, preventing layout shift */
 .newsFlashControls {
   display: flex;
   gap: 0.25rem;
@@ -59,6 +67,9 @@
   border: 1px solid #e5e7eb;
   border-radius: 4px;
   padding: 0.25rem;
+  width: 60px; /* Fixed width prevents layout shift when visibility changes */
+  min-width: 60px;
+  box-sizing: border-box;
 }
 
 .controlButton {
@@ -79,15 +90,30 @@
 }
 
 @media (max-width: 640px) {
+  /* CLS Prevention: Increased fixed height on mobile to accommodate wrapped text */
+  .newsFlash {
+    height: 72px; /* Fixed height for mobile: accommodates 2 lines of text */
+    min-height: 72px;
+  }
+
   .newsFlashContent {
     flex-wrap: wrap;
     gap: 0.75rem;
+    align-content: center; /* Vertically center wrapped content */
   }
 
+  /* CLS Prevention: Allow wrapping but lock to max 2 lines to prevent height growth */
   .newsFlashText {
     white-space: normal;
     order: 3;
     width: 100%;
+    line-height: 1.5; /* Keep locked line-height */
+    max-height: 3em; /* Max 2 lines: 1.5em * 2 = 3em */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
   }
 
   .newsFlashControls {

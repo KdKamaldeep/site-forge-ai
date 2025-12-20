@@ -79,10 +79,8 @@ export default async function HomePage() {
 
       return (
         <div className={styles.homePage}>
-          {/* NewsFlash Ticker */}
-          {newsFlashItems.length > 0 && (
-            <NewsFlash newsItems={newsFlashItems} />
-          )}
+          {/* NewsFlash Ticker - CLS Prevention: Always render to prevent layout shift on mount */}
+          <NewsFlash newsItems={newsFlashItems} />
 
           {/* Hero Featured Grid */}
           {featuredArticles.length > 0 && (
