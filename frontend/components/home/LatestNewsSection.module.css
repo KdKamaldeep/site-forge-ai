@@ -35,7 +35,7 @@
   padding: 0.5rem 1rem;
   border: 1px solid var(--border, #e2e8f0);
   background: #fff;
-  color: var(--muted, #64748b);
+  color: var(--text, #334155);
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: 6px;
@@ -53,9 +53,9 @@
 }
 
 .tab.active {
-  background: #1f2937;
+  background: var(--primary, #1d4ed8);
   color: #fff;
-  border-color: #1f2937;
+  border-color: var(--primary, #1d4ed8);
 }
 
 .contentGrid {

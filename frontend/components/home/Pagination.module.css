@@ -17,7 +17,7 @@
   padding: 0.5rem 0.75rem;
   border: 1px solid #e5e7eb;
   background: #fff;
-  color: #6b7280;
+  color: var(--text, #334155);
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: 8px;
@@ -27,19 +27,20 @@
 
 .pageButton:hover:not(:disabled) {
   border-color: #d1d5db;
-  color: #1f2937;
+  color: var(--text, #334155);
   background: #f9fafb;
 }
 
 .pageButton:disabled {
-  opacity: 0.5;
+  color: var(--muted, #64748b);
   cursor: not-allowed;
+  background: #f9fafb;
 }
 
 .pageButton.active {
-  background: #1f2937;
+  background: var(--primary, #1d4ed8);
   color: #fff;
-  border-color: #1f2937;
+  border-color: var(--primary, #1d4ed8);
 }
 
 .ellipsis {

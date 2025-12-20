@@ -34,7 +34,7 @@
 .filterButton {
   background: transparent;
   border: 1px solid #e5e7eb;
-  color: #6b7280;
+  color: var(--text, #334155);
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -49,8 +49,8 @@
 }
 
 .filterButton.active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--primary, #1d4ed8);
+  border-color: var(--primary, #1d4ed8);
   color: #fff;
 }
 
