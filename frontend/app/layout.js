@@ -3,7 +3,7 @@ import { getTenantContext } from '@/lib/tenant';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import GoogleAnalytics from '@/components/analytics/GoogleAnalytics';
-import { Montserrat, Inter } from 'next/font/google';
+import { Montserrat, Source_Sans_3 } from 'next/font/google';
 import '@/styles/globals.css';
 import '@/styles/theme.css';
 import '@/styles/mobile-optimizations.css';
@@ -17,8 +17,8 @@ const montserrat = Montserrat({
   variable: '--font-montserrat',
 });
 
-// Configure Inter font for body text (excellent readability, widely available)
-const inter = Inter({
+// Configure Source Sans 3 font for body text (distinctive, modern alternative to Source Sans Pro)
+const sourceSans3 = Source_Sans_3({
   subsets: ['latin'],
   weight: ['400', '600'],
   display: 'swap',
@@ -73,7 +73,7 @@ export default async function RootLayout({ children }) {
           />
         )}
       </head>
-      <body className={`${montserrat.variable} ${inter.variable}`}>
+      <body className={`${montserrat.variable} ${sourceSans3.variable}`}>
         <ThemeProvider theme={tenant}>
           <Header navigation={navigation} tenant={tenant} />
           <main>{children}</main>

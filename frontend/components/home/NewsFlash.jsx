@@ -58,7 +58,7 @@ export default function NewsFlash({ newsItems = [] }) {
           NewsFlash
         </Link>
         {/* CLS Prevention: Fixed line-height and no-wrap prevent text reflow */}
-        <p className={styles.newsFlashText}>{currentItem}</p>
+        <p className={styles.newsFlashText}>{currentItem ?? FALLBACK_TEXT}</p>
         {/* CLS Prevention: Always render controls container (hidden when not needed) to prevent layout shift */}
        
       </div>
