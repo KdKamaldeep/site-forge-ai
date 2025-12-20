@@ -108,7 +108,7 @@
   display: flex;
   gap: 0.5rem;
   font-size: 0.75rem;
-  color: var(--muted, #64748b);
+  color: var(--text, #64748b);
 }
 
 .byline {
@@ -116,6 +116,6 @@
 }
 
 .date {
-  color: var(--muted, #64748b);
+  color: var(--text, #64748b);
 }
 
