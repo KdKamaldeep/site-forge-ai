@@ -34,10 +34,15 @@ export default function Hero({ title, subtitle, image, isPriority = false, ...pr
             alt={title || ''}
             width={1920}
             height={1080}
-            sizes="100vw"
-            quality={80}
+
+            // 🔑 CRITICAL FIX: clamp hero width
+            sizes="(max-width: 768px) 100vw, 900px"
+
+            quality={70}
+
             priority={isPriority}
             fetchPriority={isPriority ? 'high' : 'auto'}
+
             style={{
               width: '100%',
               height: 'auto',
@@ -46,6 +51,7 @@ export default function Hero({ title, subtitle, image, isPriority = false, ...pr
               display: 'block',
             }}
           />
+
         </div>
       )}
     </>
