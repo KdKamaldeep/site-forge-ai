@@ -46,7 +46,7 @@ export default function Hero({ title, subtitle, image, isPriority = false, ...pr
             style={{
               width: '100%',
               height: 'auto',
-              borderRadius: '8px',
+              borderRadius: '0px',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
               display: 'block',
             }}
