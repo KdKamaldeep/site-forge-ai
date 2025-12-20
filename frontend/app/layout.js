@@ -3,9 +3,28 @@ import { getTenantContext } from '@/lib/tenant';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import GoogleAnalytics from '@/components/analytics/GoogleAnalytics';
+import { Montserrat, Source_Sans_Pro } from 'next/font/google';
 import '@/styles/globals.css';
 import '@/styles/theme.css';
 import '@/styles/mobile-optimizations.css';
+
+// Configure Montserrat font for headings
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-montserrat',
+});
+
+// Configure Source Sans Pro font for body text
+const sourceSansPro = Source_Sans_Pro({
+  subsets: ['latin'],
+  weight: ['400', '600'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-source-sans-pro',
+});
 
 export const metadata = {
   title: 'MicroSite Empire AI',
@@ -40,10 +59,6 @@ export default async function RootLayout({ children }) {
             </>
           );
         })()}
-        {/* Google Fonts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet" />
         {tenant?.googleAnalyticsId && (
           <GoogleAnalytics 
             gaId={tenant.googleAnalyticsId} 
@@ -58,7 +73,7 @@ export default async function RootLayout({ children }) {
           />
         )}
       </head>
-      <body>
+      <body className={`${montserrat.variable} ${sourceSansPro.variable}`}>
         <ThemeProvider theme={tenant}>
           <Header navigation={navigation} tenant={tenant} />
           <main>{children}</main>
