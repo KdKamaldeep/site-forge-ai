@@ -28,16 +28,21 @@ export default function FeaturedGrid({ articles = [] }) {
                 className={styles.featuredLink}
               >
                 <div className={styles.imageWrapper}>
-                  {/* WHY: Use ImageCard for optimized images
-                      - First card (index 0) could be priority, but we'll set priority only on true hero
-                      - All others lazy-load to reduce initial page weight
-                      - Responsive sizes ensure mobile gets smaller images */}
+                  {/* LCP Optimization: First card (index 0) uses priority loading
+                      - This is the LCP element, so it must load immediately with high priority
+                      - Higher quality (80) for better visual quality on LCP element
+                      - Optimized sizes for faster loading: larger on desktop for LCP
+                      - All other cards lazy-load to reduce initial page weight */}
                   <ImageCard
                     thumbnail={article.thumbnail}
                     image={article.meta?.ogImage}
                     alt={article.title}
-                    priority={false}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    priority={index === 0}
+                    quality={index === 0 ? 80 : 70}
+                    sizes={index === 0 
+                      ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
+                      : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    }
                   />
                   {article.categoryKey && (
                     <div className={styles.badgeWrapper}>

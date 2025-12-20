@@ -55,8 +55,8 @@ export default function ImageCard({
         sizes={sizes}
         quality={quality}
         priority={priority}
-        // WHY fetchPriority: Only set high for the single hero image
-        // Other images use default (auto) which allows browser to prioritize
+        // LCP Optimization: Set fetchPriority="high" for priority images to improve LCP
+        // This tells the browser to prioritize this image resource loading
         fetchPriority={priority ? 'high' : 'auto'}
         className={styles.image}
         style={{
