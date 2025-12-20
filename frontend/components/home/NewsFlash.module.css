@@ -17,6 +17,8 @@
   align-items: center;
   gap: 1.5rem;
   height: 100%; /* Fill parent height to ensure vertical centering */
+  width: 100%;
+  box-sizing: border-box; /* Include padding in width calculation to prevent overflow */
 }
 
 .newsFlashButton {
@@ -100,6 +102,7 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     align-content: center; /* Vertically center wrapped content */
+    padding: 0 1rem; /* Reduce padding on mobile to prevent horizontal overflow */
   }
 
   /* CLS Prevention: Allow wrapping but lock to max 2 lines to prevent height growth */
