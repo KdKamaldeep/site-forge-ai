@@ -39,9 +39,10 @@ export default function FeaturedGrid({ articles = [] }) {
                     alt={article.title}
                     priority={index === 0}
                     quality={index === 0 ? 80 : 70}
-                    sizes={index === 0 
-                      ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
-                      : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    sizes={
+                      index === 0
+                        ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
+                        : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 480px"
                     }
                   />
                   {article.categoryKey && (
