@@ -1,7 +1,16 @@
 import styles from './ux-components.module.css';
+import Image from 'next/image';
 import { normalizeImageUrl } from '@/lib/imageUtils';
 
-export default function Hero({ title, subtitle, image, ...props }) {
+/**
+ * Hero Component
+ * 
+ * WHY: This is the SINGLE hero image that should use priority loading
+ * - priority={true} + fetchPriority="high" for LCP optimization
+ * - Only ONE image on the page should have these flags
+ * - This ensures the hero image loads first for best LCP score
+ */
+export default function Hero({ title, subtitle, image, isPriority = false, ...props }) {
   const normalizedImage = normalizeImageUrl(image);
   
   return (
@@ -16,7 +25,27 @@ export default function Hero({ title, subtitle, image, ...props }) {
       </section>
       {normalizedImage && (
         <div className={styles.heroFeatureImage}>
-          <img src={normalizedImage} alt={title || ''} />
+          {/* WHY: Only set priority=true when this is THE hero image
+              - isPriority prop allows parent to control this
+              - fetchPriority="high" tells browser to prioritize this image
+              - Large sizes for hero image quality */}
+          <Image
+            src={normalizedImage}
+            alt={title || ''}
+            width={1920}
+            height={1080}
+            sizes="100vw"
+            quality={80}
+            priority={isPriority}
+            fetchPriority={isPriority ? 'high' : 'auto'}
+            style={{
+              width: '100%',
+              height: 'auto',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              display: 'block',
+            }}
+          />
         </div>
       )}
     </>

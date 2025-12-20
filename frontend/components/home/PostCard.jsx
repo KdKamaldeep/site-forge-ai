@@ -7,7 +7,7 @@ import Link from 'next/link';
 import CategoryBadge from '@/components/articles/CategoryBadge';
 import MetaLine from '@/components/articles/MetaLine';
 import { formatTitle, getExcerpt } from '@/lib/textFormat';
-import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
+import ImageCard from '@/components/home/ImageCard';
 import styles from './PostCard.module.css';
 
 export default function PostCard({ article }) {
@@ -23,27 +23,17 @@ export default function PostCard({ article }) {
     <article className={styles.postCard}>
       <Link href={articleUrl} className={styles.cardLink}>
         <div className={styles.imageWrapper}>
-          {(() => {
-            const normalizedThumbnail = normalizeThumbnail(article.thumbnail);
-            const normalizedOgImage = normalizeImageUrl(article.meta?.ogImage);
-            return normalizedThumbnail?.url ? (
-              <img 
-                src={normalizedThumbnail.url} 
-                alt={article.title}
-                className={styles.cardImage}
-                width={normalizedThumbnail.width || 1200}
-                height={normalizedThumbnail.height || 675}
-              />
-            ) : normalizedOgImage ? (
-              <img 
-                src={normalizedOgImage} 
-                alt={article.title}
-                className={styles.cardImage}
-              />
-            ) : (
-              <div className={styles.imagePlaceholder} />
-            );
-          })()}
+          {/* WHY: Use ImageCard for optimized images with 16:9 aspect ratio
+              - Prevents CLS by reserving space before image loads
+              - Lazy-loaded by default (not priority)
+              - Automatic WebP/AVIF conversion via Next.js Image Optimizer */}
+          <ImageCard
+            thumbnail={article.thumbnail}
+            image={article.meta?.ogImage}
+            alt={article.title}
+            priority={false}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
           {article.categoryKey && (
             <div className={styles.badgeWrapper}>
               <CategoryBadge 

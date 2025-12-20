@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatTitle } from '@/lib/textFormat';
 import { getStandalonePages } from '@/lib/api';
 import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
@@ -110,15 +111,25 @@ export default function Footer({ navigation, tenant, categories = [], popularPos
                       const normalizedThumbnail = normalizeThumbnail(post.thumbnail);
                       const normalizedOgImage = normalizeImageUrl(post.meta?.ogImage);
                       return normalizedThumbnail?.url ? (
-                        <img 
-                          src={normalizedThumbnail.url} 
-                          alt={post.title} 
+                        <Image
+                          src={normalizedThumbnail.url}
+                          alt={post.title}
+                          fill
+                          sizes="80px"
+                          quality={70}
                           className={styles.popularImage}
-                          width={normalizedThumbnail.width || 1200}
-                          height={normalizedThumbnail.height || 675}
+                          style={{ objectFit: 'cover' }}
                         />
                       ) : normalizedOgImage ? (
-                        <img src={normalizedOgImage} alt={post.title} className={styles.popularImage} />
+                        <Image
+                          src={normalizedOgImage}
+                          alt={post.title}
+                          fill
+                          sizes="80px"
+                          quality={70}
+                          className={styles.popularImage}
+                          style={{ objectFit: 'cover' }}
+                        />
                       ) : (
                         <div className={styles.popularPlaceholder}></div>
                       );

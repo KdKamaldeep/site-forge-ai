@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './LatestNews.module.css';
 import { getCategoryColor } from '@/lib/categoryColors';
 
@@ -42,40 +44,51 @@ export default function LatestNews({ articles, categories = [] }) {
                   className={styles.articleLink}
                 >
                   <div className={styles.articleLayout}>
-                    {article.image ? (
-                      <div className={styles.imageWrapper}>
-                        <img 
-                          src={article.image} 
-                          alt={article.title}
-                          className={styles.articleImage}
-                        />
-                        {article.categoryKey && (
-                          <span 
-                            className={styles.categoryBadge}
-                            style={{ backgroundColor: getCategoryColor(article.categoryKey) }}
-                          >
-                            {(article.categoryKey || '')
-                              .split(' ')
-                              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                              .join(' ')}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <div className={styles.imagePlaceholder}>
-                        {article.categoryKey && (
-                          <span 
-                            className={styles.categoryBadge}
-                            style={{ backgroundColor: getCategoryColor(article.categoryKey) }}
-                          >
-                            {(article.categoryKey || '')
-                              .split(' ')
-                              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                              .join(' ')}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    {(() => {
+                      const normalizedImage = normalizeImageUrl(article.image);
+                      return normalizedImage ? (
+                        <div className={styles.imageWrapper}>
+                          {/* WHY: Use Next.js Image for optimized images
+                              - Lazy-loaded (not priority) since this is below the fold
+                              - Fixed height container prevents CLS
+                              - Responsive sizing for mobile/desktop */}
+                          <Image
+                            src={normalizedImage}
+                            alt={article.title}
+                            fill
+                            sizes="(max-width: 768px) 50vw, 33vw"
+                            quality={70}
+                            className={styles.articleImage}
+                            style={{ objectFit: 'cover' }}
+                          />
+                          {article.categoryKey && (
+                            <span 
+                              className={styles.categoryBadge}
+                              style={{ backgroundColor: getCategoryColor(article.categoryKey) }}
+                            >
+                              {(article.categoryKey || '')
+                                .split(' ')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                .join(' ')}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className={styles.imagePlaceholder}>
+                          {article.categoryKey && (
+                            <span 
+                              className={styles.categoryBadge}
+                              style={{ backgroundColor: getCategoryColor(article.categoryKey) }}
+                            >
+                              {(article.categoryKey || '')
+                                .split(' ')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                .join(' ')}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className={styles.articleContent}>
                       <h3 className={styles.articleTitle}>{article.title}</h3>
                       <div className={styles.articleMeta}>
@@ -112,26 +125,35 @@ export default function LatestNews({ articles, categories = [] }) {
                   href={rightArticle.categoryKey ? `/${rightArticle.categoryKey}/${rightArticle.slug}` : `/${rightArticle.slug}`}
                   className={styles.articleLink}
                 >
-                  {rightArticle.image ? (
-                    <div className={styles.largeImageWrapper}>
-                      <img 
-                        src={rightArticle.image} 
-                        alt={rightArticle.title}
-                        className={styles.largeImage}
-                      />
-                      {rightArticle.categoryKey && (
-                        <span 
-                          className={styles.largeCategoryBadge}
-                          style={{ backgroundColor: getCategoryColor(rightArticle.categoryKey) }}
-                        >
-                          {(rightArticle.categoryKey || '')
-                            .split(' ')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join(' ')}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
+                  {(() => {
+                    const normalizedImage = normalizeImageUrl(rightArticle.image);
+                    return normalizedImage ? (
+                      <div className={styles.largeImageWrapper}>
+                        {/* WHY: Use Next.js Image for optimized large article image
+                            - Lazy-loaded (not priority) since it's in right column
+                            - Responsive sizing ensures mobile gets smaller images */}
+                        <Image
+                          src={normalizedImage}
+                          alt={rightArticle.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          quality={75}
+                          className={styles.largeImage}
+                          style={{ objectFit: 'cover' }}
+                        />
+                        {rightArticle.categoryKey && (
+                          <span 
+                            className={styles.largeCategoryBadge}
+                            style={{ backgroundColor: getCategoryColor(rightArticle.categoryKey) }}
+                          >
+                            {(rightArticle.categoryKey || '')
+                              .split(' ')
+                              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                              .join(' ')}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
                     <div className={styles.largeImagePlaceholder}>
                       {rightArticle.categoryKey && (
                         <span 

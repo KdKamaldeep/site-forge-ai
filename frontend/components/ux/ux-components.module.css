@@ -183,6 +183,11 @@
   padding: 0 2rem;
 }
 
+.imageBlockWrapper {
+  position: relative;
+  width: 100%;
+}
+
 .imageBlockImg {
   width: 100%;
   border-radius: 8px;

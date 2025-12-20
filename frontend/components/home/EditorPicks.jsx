@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './EditorPicks.module.css';
 import { getCategoryColor } from '@/lib/categoryColors';
 
@@ -36,26 +38,34 @@ export default function EditorPicks({ articles, title = "Editor Pick's" }) {
                 className={styles.articleLink}
               >
                 <div className={styles.articleLayout}>
-                  {article.image ? (
-                    <div className={styles.imageWrapper}>
-                      <img 
-                        src={article.image} 
-                        alt={article.title}
-                        className={styles.articleImage}
-                      />
-                      {article.categoryKey && (
-                        <span 
-                          className={styles.categoryBadge}
-                          style={{ backgroundColor: getCategoryColor(article.categoryKey) }}
-                        >
-                          {(article.categoryKey || '')
-                            .split(' ')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join(' ')}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
+                  {(() => {
+                    const normalizedImage = normalizeImageUrl(article.image);
+                    return normalizedImage ? (
+                      <div className={styles.imageWrapper}>
+                        {/* WHY: Use Next.js Image for optimized images
+                            - Lazy-loaded (not priority) since this is in sidebar/below fold */}
+                        <Image
+                          src={normalizedImage}
+                          alt={article.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 300px"
+                          quality={70}
+                          className={styles.articleImage}
+                          style={{ objectFit: 'cover' }}
+                        />
+                        {article.categoryKey && (
+                          <span 
+                            className={styles.categoryBadge}
+                            style={{ backgroundColor: getCategoryColor(article.categoryKey) }}
+                          >
+                            {(article.categoryKey || '')
+                              .split(' ')
+                              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                              .join(' ')}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
                     <div className={styles.imagePlaceholder}>
                       {article.categoryKey && (
                         <span 

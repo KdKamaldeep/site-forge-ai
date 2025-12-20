@@ -7,7 +7,7 @@ import Link from 'next/link';
 import CategoryBadge from '@/components/articles/CategoryBadge';
 import MetaLine from '@/components/articles/MetaLine';
 import { formatTitle, getExcerpt } from '@/lib/textFormat';
-import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
+import ImageCard from '@/components/home/ImageCard';
 import styles from './EditorsPicksSection.module.css';
 
 export default function EditorsPicksSection({ articles = [], title = "Editor's Picks" }) {
@@ -29,27 +29,16 @@ export default function EditorsPicksSection({ articles = [], title = "Editor's P
                   <div className={styles.articleLayout}>
                     {/* Image */}
                     <div className={styles.imageWrapper}>
-                      {(() => {
-                        const normalizedThumbnail = normalizeThumbnail(article.thumbnail);
-                        const normalizedOgImage = normalizeImageUrl(article.meta?.ogImage);
-                        return normalizedThumbnail?.url ? (
-                          <img 
-                            src={normalizedThumbnail.url} 
-                            alt={article.title}
-                            className={styles.articleImage}
-                            width={normalizedThumbnail.width || 1200}
-                            height={normalizedThumbnail.height || 675}
-                          />
-                        ) : normalizedOgImage ? (
-                          <img 
-                            src={normalizedOgImage} 
-                            alt={article.title}
-                            className={styles.articleImage}
-                          />
-                        ) : (
-                          <div className={styles.imagePlaceholder} />
-                        );
-                      })()}
+                      {/* WHY: Use ImageCard for optimized images with 16:9 aspect ratio
+                          - Prevents CLS by reserving space before image loads
+                          - Lazy-loaded (not priority) since this is below the fold */}
+                      <ImageCard
+                        thumbnail={article.thumbnail}
+                        image={article.meta?.ogImage}
+                        alt={article.title}
+                        priority={false}
+                        sizes="(max-width: 768px) 100vw, 400px"
+                      />
                       {article.categoryKey && (
                         <div className={styles.badgeWrapper}>
                           <CategoryBadge 

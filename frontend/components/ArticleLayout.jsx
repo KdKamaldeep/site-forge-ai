@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatTitle } from '@/lib/textFormat';
 import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './ArticleLayout.module.css';
@@ -214,16 +215,28 @@ export default function ArticleLayout({
         {/* Main content */}
         <div className={styles.articleMain}>
           {/* Hero Image (thumbnail fallback) */}
+          {/* WHY: This is THE hero image for article pages - should use priority
+              - Only ONE image per page should have priority + fetchPriority="high"
+              - This ensures best LCP (Largest Contentful Paint) score
+              - Large sizes for hero image quality */}
           {(() => {
             const normalizedThumbnail = normalizeThumbnail(thumbnail);
             return normalizedThumbnail?.url && (
               <div className={styles.heroImageWrapper}>
-                <img 
-                  src={normalizedThumbnail.url} 
+                <Image
+                  src={normalizedThumbnail.url}
                   alt={title}
-                  className={styles.heroImage}
                   width={normalizedThumbnail.width || 1200}
                   height={normalizedThumbnail.height || 675}
+                  sizes="100vw"
+                  quality={80}
+                  priority={true}
+                  fetchPriority="high"
+                  className={styles.heroImage}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                  }}
                 />
               </div>
             );

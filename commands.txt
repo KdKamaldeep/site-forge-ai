@@ -7,7 +7,7 @@ node scripts/run-pillar.js example.com --count 5
 # Generate 1 page for each pillar
 node scripts/run-pillar.js SmartHomeTricks.com --count 3
 
-node scripts/run-pillar.js SmartHomeTricks.com --slug how-to-use-ai
+node scripts/run-pillar.js www.lavanyaverse.com --slug beginners-guide-to-smart-plugs
 
 node scripts/run-pillar.js SmartHomeTricks.com --category technology
 
@@ -18,7 +18,7 @@ node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011
 node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011 nutrition
 
 # Process a specific page
-node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011 smart-devices healthy-breakfast-ideas
+node scripts/add-internal-links-to-faq.js 693db57edeafaf32e8b75427 smart-devices beginners-guide-to-smart-plugs
 
 
 # Process specific category with 1 page

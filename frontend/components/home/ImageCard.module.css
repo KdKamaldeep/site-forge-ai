@@ -1,0 +1,28 @@
+/**
+ * ImageCard Styles
+ * 
+ * WHY these styles:
+ * - aspect-ratio: 16/9 prevents CLS by reserving space before image loads
+ * - position: relative required for Next.js Image fill prop
+ * - overflow: hidden ensures image doesn't overflow container
+ */
+
+.imageContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.image {
+  /* Next.js Image with fill will automatically size to container */
+  object-fit: cover;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+}
+

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatTitle } from '@/lib/textFormat';
 import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './PopularPosts.module.css';
@@ -36,15 +37,25 @@ export default function PopularPosts({ articles }) {
                   const normalizedThumbnail = normalizeThumbnail(article.thumbnail);
                   const normalizedOgImage = normalizeImageUrl(article.meta?.ogImage);
                   return normalizedThumbnail?.url ? (
-                    <img 
-                      src={normalizedThumbnail.url} 
-                      alt={article.title} 
+                    <Image
+                      src={normalizedThumbnail.url}
+                      alt={article.title}
+                      fill
+                      sizes="60px"
+                      quality={70}
                       className={styles.thumbnailImage}
-                      width={normalizedThumbnail.width || 1200}
-                      height={normalizedThumbnail.height || 675}
+                      style={{ objectFit: 'cover' }}
                     />
                   ) : normalizedOgImage ? (
-                    <img src={normalizedOgImage} alt={article.title} className={styles.thumbnailImage} />
+                    <Image
+                      src={normalizedOgImage}
+                      alt={article.title}
+                      fill
+                      sizes="60px"
+                      quality={70}
+                      className={styles.thumbnailImage}
+                      style={{ objectFit: 'cover' }}
+                    />
                   ) : (
                     <div className={styles.thumbnailPlaceholder}></div>
                   );

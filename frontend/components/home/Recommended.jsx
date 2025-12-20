@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './Recommended.module.css';
 
 export default function Recommended({ articles }) {
@@ -41,11 +43,24 @@ export default function Recommended({ articles }) {
               className={styles.link}
             >
               <div className={styles.imageWrapper}>
-                {article.image ? (
-                  <img src={article.image} alt={article.title} className={styles.image} />
-                ) : (
-                  <div className={styles.imagePlaceholder}></div>
-                )}
+                {(() => {
+                  const normalizedImage = normalizeImageUrl(article.image);
+                  return normalizedImage ? (
+                    /* WHY: Use Next.js Image for optimized images
+                        - Lazy-loaded (not priority) since this is in sidebar/below fold */
+                    <Image
+                      src={normalizedImage}
+                      alt={article.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 200px"
+                      quality={70}
+                      className={styles.image}
+                      style={{ objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <div className={styles.imagePlaceholder}></div>
+                  );
+                })()}
               </div>
               <div className={styles.content}>
                 <h4 className={styles.title}>{article.title}</h4>
