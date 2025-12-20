@@ -80,7 +80,7 @@ a:hover {
 }
 
 a:visited {
-  color: var(--link-visited, #403e53);
+  color: var(--text, #403e53);
 }
 
 a:focus-visible {

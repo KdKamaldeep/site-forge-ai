@@ -6,15 +6,12 @@ import styles from './PopularPosts.module.css';
 
 export default function PopularPosts({ articles }) {
   if (!articles || articles.length === 0) return null;
- const filteredArticles = articles.filter(article => {
+  const filteredArticles = articles.filter(article => {
     if (article.isStandalone === true || article.isStandalone === 'true') return false;
     if (article.standalonePageType) return false;
     return true;
   });
-  for (const article of filteredArticles) {
-    console.log('article', article.title);
-    console.log('article.isStandalone', article.isStandalone);
-  }
+  
   return (
     <section className={styles.popularPosts}>
       <div className={styles.header}>
