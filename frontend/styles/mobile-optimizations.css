@@ -14,15 +14,12 @@ img {
   display: block;
 }
 
-/* Lazy loading images */
-img[loading="lazy"] {
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-img[loading="lazy"].loaded {
-  opacity: 1;
-}
+/* Lazy loading images - REMOVED
+ * WHY: Next.js Image component handles lazy loading internally
+ * The old rule set opacity:0 on img[loading="lazy"] expecting a .loaded class,
+ * but Next.js Image doesn't use this pattern and handles fade-in automatically.
+ * Keeping this rule would cause Next.js Image components to be invisible.
+ */
 
 /* Responsive typography */
 html {
