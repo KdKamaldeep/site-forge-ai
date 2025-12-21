@@ -60,9 +60,9 @@ export default function PopularPosts({ articles }) {
               </div>
               <div className={styles.content}>
                 <h4 className={styles.itemTitle}>{formatTitle(article.title)}</h4>
-                {article.updatedAt && (
+                {(article.publishedAt || article.updatedAt) && (
                   <time className={styles.itemMeta}>
-                    {new Date(article.updatedAt).toLocaleDateString('en-US', { 
+                    {new Date(article.publishedAt || article.updatedAt).toLocaleDateString('en-US', { 
                       month: 'short', 
                       day: 'numeric', 
                       year: 'numeric'

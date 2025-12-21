@@ -36,7 +36,7 @@ export class PageService {
       ];
     }
     
-    const page = await Page.findOne(query).select('_id title slug meta content uxLayout schemaMarkup readingTime wordCount intent monetizationMode categoryKey primaryKeyword thumbnail updatedAt createdAt isStandalone standalonePageType published');
+    const page = await Page.findOne(query).select('_id title slug meta content uxLayout schemaMarkup readingTime wordCount intent monetizationMode categoryKey primaryKeyword thumbnail updatedAt createdAt publishedAt isStandalone standalonePageType published');
     
     if (!page) {
       return null;
@@ -69,7 +69,7 @@ export class PageService {
       isStandalone: page.isStandalone || false,
       standalonePageType: page.standalonePageType || null,
       updatedAt: page.updatedAt || page.createdAt || null, // Use updatedAt, fallback to createdAt
-      publishedAt: page.createdAt || page.updatedAt || null // publishedAt maps to createdAt (original publish date)
+      publishedAt: page.publishedAt || page.createdAt || null // Use actual publishedAt field, fallback to createdAt for backward compatibility
     };
   }
 
@@ -85,7 +85,7 @@ export class PageService {
         { published: true },
         { published: { $exists: false } }
       ]
-    }).select('title slug meta content uxLayout schemaMarkup readingTime wordCount thumbnail updatedAt');
+    }).select('title slug meta content uxLayout schemaMarkup readingTime wordCount thumbnail updatedAt createdAt publishedAt');
     
     if (!page) {
       return null;
@@ -110,7 +110,7 @@ export class PageService {
       wordCount: page.wordCount || null,
       thumbnail: page.thumbnail || null,
       updatedAt: page.updatedAt || page.createdAt || null, // Use updatedAt, fallback to createdAt
-      publishedAt: page.createdAt || page.updatedAt || null // publishedAt maps to createdAt (original publish date)
+      publishedAt: page.publishedAt || page.createdAt || null // Use actual publishedAt field, fallback to createdAt for backward compatibility
     };
   }
 
@@ -131,7 +131,7 @@ export class PageService {
         { published: { $exists: false } }
       ]
     })
-      .select('_id slug title meta categoryKey readingTime wordCount thumbnail updatedAt isStandalone isHome')
+      .select('_id slug title meta categoryKey readingTime wordCount thumbnail updatedAt publishedAt createdAt isStandalone isHome')
       .sort({ updatedAt: -1 }); // Newest first
     
     return {
@@ -149,6 +149,7 @@ export class PageService {
           wordCount: page.wordCount || null,
           thumbnail: page.thumbnail || null,
           updatedAt: page.updatedAt,
+          publishedAt: page.publishedAt || page.createdAt || null, // Use actual publishedAt field, fallback to createdAt
           isStandalone: page.isStandalone || false, // Include for frontend filtering
           isHome: page.isHome || false // Include for sitemap generation
         }))
@@ -159,14 +160,45 @@ export class PageService {
    * Update page
    */
   static async updatePage(id, updates) {
-    // Don't automatically set updatedAt - let MongoDB timestamps handle it
-    // Only set updatedAt explicitly if it's provided in updates
-    // This preserves original dates and only updates when content actually changes
-    return await Page.findByIdAndUpdate(
-      id,
-      { $set: updates },
-      { new: true }
-    ).populate('tenantId');
+    // Prevent updatedAt from updating when only publishing (preserves original update date)
+    // Check if this is just a publish operation (only updating published field)
+    const isPublishOnly = Object.keys(updates).length === 1 && updates.published !== undefined;
+    
+    if (isPublishOnly) {
+      // Publishing only - preserve existing updatedAt and set publishedAt
+      const existingPage = await Page.findById(id).select('updatedAt publishedAt');
+      const originalUpdatedAt = existingPage?.updatedAt;
+      
+      // Set publishedAt when publishing (only if not already set, or update if republishing)
+      const publishUpdates = {
+        ...updates,
+        publishedAt: updates.published ? (existingPage?.publishedAt || new Date()) : null
+      };
+      
+      const updatedPage = await Page.findByIdAndUpdate(
+        id,
+        { $set: publishUpdates },
+        { new: true }
+      ).populate('tenantId');
+      
+      // Restore original updatedAt if it was changed
+      if (originalUpdatedAt && updatedPage.updatedAt?.getTime() !== originalUpdatedAt.getTime()) {
+        await Page.updateOne(
+          { _id: id },
+          { $set: { updatedAt: originalUpdatedAt } }
+        );
+        updatedPage.updatedAt = originalUpdatedAt;
+      }
+      
+      return updatedPage;
+    } else {
+      // Normal update (content changes) - let MongoDB timestamps handle updatedAt
+      return await Page.findByIdAndUpdate(
+        id,
+        { $set: updates },
+        { new: true }
+      ).populate('tenantId');
+    }
   }
 
   /**
@@ -214,12 +246,12 @@ export class PageService {
       query.isStandalone = { $ne: true }; // Exclude standalone pages
     }
     
-    const pages = await Page.find(query).select('_id title slug content meta categoryKey primaryKeyword intent monetizationMode readingTime wordCount updatedAt createdAt isStandalone standalonePageType').lean();
+    const pages = await Page.find(query).select('_id title slug content meta categoryKey primaryKeyword intent monetizationMode readingTime wordCount updatedAt createdAt publishedAt isStandalone standalonePageType').lean();
     
-    // Map to include publishedAt (from createdAt) for frontend compatibility
+    // Map to include publishedAt (use actual field, fallback to createdAt for backward compatibility)
     return pages.map(page => ({
       ...page,
-      publishedAt: page.createdAt || page.updatedAt || null // publishedAt maps to createdAt
+      publishedAt: page.publishedAt || page.createdAt || null // Use actual publishedAt field, fallback to createdAt
     }));
   }
 
@@ -237,13 +269,13 @@ export class PageService {
         { published: { $exists: false } }
       ]
     })
-    .select('_id title slug standalonePageType updatedAt createdAt')
+    .select('_id title slug standalonePageType updatedAt createdAt publishedAt')
     .sort({ standalonePageType: 1 }) // Sort by page type for consistent ordering
     .lean();
     
     return pages.map(page => ({
       ...page,
-      publishedAt: page.createdAt || page.updatedAt || null
+      publishedAt: page.publishedAt || page.createdAt || null // Use actual publishedAt field, fallback to createdAt
     }));
   }
 }

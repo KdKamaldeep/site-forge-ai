@@ -218,6 +218,7 @@ async function publishPage() {
     console.log('📝 Step 1: Publishing page...');
     const updatedPage = await PageService.updatePage(page._id, {
       published: true
+      // publishedAt will be set automatically by updatePage when publishing
     });
 
     if (!updatedPage) {

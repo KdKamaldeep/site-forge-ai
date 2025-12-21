@@ -74,9 +74,9 @@ export default function FeaturedArticles({ articles }) {
                         <span className={styles.byline}>
                           BY {article.meta?.author?.name?.toUpperCase() || 'LavanyaVerse'}
                         </span>
-                        {article.updatedAt && (
+                        {(article.publishedAt || article.updatedAt) && (
                           <time className={styles.date}>
-                            {new Date(article.updatedAt).toLocaleDateString('en-US', { 
+                            {new Date(article.publishedAt || article.updatedAt).toLocaleDateString('en-US', { 
                               month: 'short', 
                               day: 'numeric', 
                               year: 'numeric'
@@ -148,9 +148,9 @@ export default function FeaturedArticles({ articles }) {
                       <span className={styles.byline}>
                         BY {rightArticle.meta?.author?.name?.toUpperCase() || 'LavanyaVerse'}
                       </span>
-                      {rightArticle.updatedAt && (
+                      {(rightArticle.publishedAt || rightArticle.updatedAt) && (
                         <time className={styles.date}>
-                          {new Date(rightArticle.updatedAt).toLocaleDateString('en-US', { 
+                          {new Date(rightArticle.publishedAt || rightArticle.updatedAt).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric', 
                             year: 'numeric'

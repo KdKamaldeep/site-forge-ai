@@ -194,7 +194,8 @@ export default function ArticleLayout({
     };
   }, [toc]);
 
-  const displayDate = updatedAt || publishedAt;
+  // Prefer publishedAt over updatedAt for display (shows original publication date)
+  const displayDate = publishedAt || updatedAt;
 
   return (
     <article className={styles.articleContainer}>

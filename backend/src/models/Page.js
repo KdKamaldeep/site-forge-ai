@@ -161,6 +161,13 @@ const pageSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  // publishedAt: Date when page was first published (or republished)
+  // Used for sorting and displaying publication date
+  publishedAt: {
+    type: Date,
+    default: null,
+    index: true
   }
 }, {
   timestamps: true

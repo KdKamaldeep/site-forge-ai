@@ -86,9 +86,9 @@ export default function EditorPicks({ articles, title = "Editor Pick's" }) {
                       <span className={styles.byline}>
                         BY {article.meta?.author?.name?.toUpperCase() || 'LavanyaVerse'}
                       </span>
-                      {article.updatedAt && (
+                      {(article.publishedAt || article.updatedAt) && (
                         <time className={styles.date}>
-                          {new Date(article.updatedAt).toLocaleDateString('en-US', { 
+                          {new Date(article.publishedAt || article.updatedAt).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric', 
                             year: 'numeric'
