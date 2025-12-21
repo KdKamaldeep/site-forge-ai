@@ -28,8 +28,12 @@ export class PageService {
     };
     
     // Only return published pages unless includeUnpublished is true
+    // For backward compatibility: treat missing published field as true
     if (!includeUnpublished) {
-      query.published = true;
+      query.$or = [
+        { published: true },
+        { published: { $exists: false } }
+      ];
     }
     
     const page = await Page.findOne(query).select('_id title slug meta content uxLayout schemaMarkup readingTime wordCount intent monetizationMode categoryKey primaryKeyword thumbnail updatedAt createdAt isStandalone standalonePageType published');
@@ -77,7 +81,10 @@ export class PageService {
     const page = await Page.findOne({ 
       tenantId, 
       isHome: true,
-      published: true 
+      $or: [
+        { published: true },
+        { published: { $exists: false } }
+      ]
     }).select('title slug meta content uxLayout schemaMarkup readingTime wordCount thumbnail updatedAt');
     
     if (!page) {
@@ -115,10 +122,14 @@ export class PageService {
    */
   static async listPagesForTenant(tenantId) {
     // Exclude standalone pages and unpublished pages from regular listings
+    // For backward compatibility: treat missing published field as true
     const pages = await Page.find({ 
       tenantId,
       isStandalone: { $ne: true }, // Exclude standalone pages
-      published: true // Only published pages
+      $or: [
+        { published: true },
+        { published: { $exists: false } }
+      ]
     })
       .select('_id slug title meta categoryKey readingTime wordCount thumbnail updatedAt isStandalone isHome')
       .sort({ updatedAt: -1 }); // Newest first
@@ -165,10 +176,14 @@ export class PageService {
    * Only returns published pages
    */
   static async listPages(tenantId) {
+    // For backward compatibility: treat missing published field as true
     return await Page.find({ 
       tenantId,
       isStandalone: { $ne: true }, // Exclude standalone pages
-      published: true // Only published pages
+      $or: [
+        { published: true },
+        { published: { $exists: false } }
+      ]
     })
       .sort({ updatedAt: -1 })
       .select('-content -uxLayout -schemaMarkup')
@@ -188,9 +203,13 @@ export class PageService {
    * Only returns published pages (for sitemap/linking)
    */
   static async getAllPagesForTenant(tenantId, includeStandalone = false) {
+    // For backward compatibility: treat missing published field as true
     const query = { 
       tenantId,
-      published: true // Only published pages for sitemap/linking
+      $or: [
+        { published: true },
+        { published: { $exists: false } }
+      ]
     };
     if (!includeStandalone) {
       query.isStandalone = { $ne: true }; // Exclude standalone pages
@@ -210,10 +229,14 @@ export class PageService {
    * Only returns published standalone pages
    */
   static async getStandalonePages(tenantId) {
+    // For backward compatibility: treat missing published field as true
     const pages = await Page.find({ 
       tenantId, 
       isStandalone: true,
-      published: true // Only published standalone pages
+      $or: [
+        { published: true },
+        { published: { $exists: false } }
+      ]
     })
     .select('_id title slug standalonePageType updatedAt createdAt')
     .sort({ standalonePageType: 1 }) // Sort by page type for consistent ordering
