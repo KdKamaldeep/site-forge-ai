@@ -147,6 +147,7 @@ router.get('/standalone/:tenantId', PageController.getStandalonePages);
  *       404:
  *         description: Page not found
  */
+router.get('/preview/:tenantId/:slug', PageController.getBySlugForPreview);
 router.get('/:tenantId/:slug', PageController.getBySlug);
 
 // Protected routes - manage pages

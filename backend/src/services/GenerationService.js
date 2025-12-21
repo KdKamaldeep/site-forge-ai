@@ -125,18 +125,10 @@ export class GenerationService {
 
       results.stats.createdPages = results.pagesCreated.length;
 
-      // 8. Rebuild internal linking (minimal)
-      try {
-        console.log('\n🔗 Rebuilding internal links...');
-        await InternalLinkingService.refreshAllLinks(tenantId);
-        console.log('✅ Internal links updated');
-      } catch (error) {
-        console.warn(`⚠️  Internal linking failed:`, error.message);
-        results.errors.push({
-          step: 'internal_linking',
-          error: error.message
-        });
-      }
+      // 8. Skip internal linking for unpublished pages
+      // Internal linking will be done when pages are published via publish-page.js script
+      console.log('\n⏭️  Skipping internal linking (pages are unpublished)');
+      console.log('   Run publish-page.js script to publish pages and update internal links');
 
       // 9. Check if pillar is complete
       const updatedCluster = await ClusterService.getOrCreateCluster(tenantId);

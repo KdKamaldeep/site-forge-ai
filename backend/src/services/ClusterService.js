@@ -46,15 +46,27 @@ export class ClusterService {
     // If cluster has no supporting topics, generate them
     if (!cluster.supportingTopics || cluster.supportingTopics.length === 0) {
       await this.generateSupportingTopics(tenantId, cluster);
+    } else {
+      // Check if all existing topics are processed (created or skipped)
+      const allProcessed = cluster.supportingTopics.every(t => 
+        t.status === 'created' || t.status === 'skipped'
+      );
+      
+      // If all topics are processed, generate 40 new topics
+      if (allProcessed) {
+        console.log(`📊 All ${cluster.supportingTopics.length} topics processed. Generating 40 new topics...`);
+        await this.generateSupportingTopics(tenantId, cluster, true); // append = true
+      }
     }
 
     return cluster;
   }
 
   /**
-   * Generate 40 supporting topics for a pillar (once per cluster)
+   * Generate 40 supporting topics for a pillar
+   * @param {boolean} append - If true, appends new topics to existing ones (for when all topics are processed)
    */
-  static async generateSupportingTopics(tenantId, cluster) {
+  static async generateSupportingTopics(tenantId, cluster, append = false) {
     const tenant = await TenantService.getTenantById(tenantId);
     if (!tenant) {
       throw new Error('Tenant not found');
@@ -68,6 +80,25 @@ export class ClusterService {
     // Get existing page slugs to avoid duplicates
     const existingPages = await PageService.getAllPagesForTenant(tenantId);
     const existingSlugs = new Set(existingPages.map(p => p.slug));
+    
+    // Get existing topic keywords and slugs from cluster to avoid duplicates
+    const existingTopicKeywords = new Set();
+    const existingTopicSlugs = new Set();
+    if (cluster.supportingTopics && cluster.supportingTopics.length > 0) {
+      cluster.supportingTopics.forEach(t => {
+        if (t.keyword) existingTopicKeywords.add(t.keyword.toLowerCase());
+        if (t.suggestedSlug) existingTopicSlugs.add(t.suggestedSlug);
+      });
+    }
+
+    // Build list of existing topics to avoid duplicates
+    const existingTopicsList = cluster.supportingTopics && cluster.supportingTopics.length > 0
+      ? cluster.supportingTopics.slice(0, 10).map(t => `"${t.keyword}"`).join(', ')
+      : 'none';
+    
+    const duplicateWarning = append && existingTopicsList !== 'none'
+      ? `\nCRITICAL: These topics already exist in the cluster. DO NOT duplicate them:\n${existingTopicsList}\n\nGenerate completely NEW and DIFFERENT topics that are still related to the pillar.`
+      : '';
 
     const prompt = `You are an SEO content strategist. Generate 40 long-tail supporting topic keywords for the pillar keyword "${cluster.pillarKeyword}" in the category "${cluster.categoryKey}".
 
@@ -77,7 +108,7 @@ REQUIREMENTS:
 - Must fit the category: ${category?.description || cluster.categoryKey}
 - Brand tone: ${tone}
 - Brand: ${brandName}
-
+${duplicateWarning}
 ${forbiddenTopics.length > 0 ? `- NEVER use these forbidden topics: ${forbiddenTopics.join(', ')}` : ''}
 
 Return JSON array of objects:
@@ -93,7 +124,7 @@ Return JSON array of objects:
 
 Ensure:
 - All suggestedSlug values are unique
-- All keywords are unique
+- All keywords are unique${append ? ' and different from existing topics' : ''}
 - All slugs are kebab-case (lowercase, hyphens, no spaces)
 - Mix of informational (70%), commercial (20%), lead (10%) intent`;
 
@@ -189,14 +220,26 @@ Ensure:
       // Validate and clean topics
       const validTopics = [];
       const seenSlugs = new Set();
+      const seenKeywords = new Set();
 
       for (const topic of topics) {
         if (!topic.keyword || !topic.suggestedSlug) continue;
 
         const slug = slugify(topic.suggestedSlug || topic.keyword);
+        const keywordLower = topic.keyword.toLowerCase().trim();
         
-        // Skip if slug already exists or is duplicate
-        if (existingSlugs.has(slug) || seenSlugs.has(slug)) continue;
+        // Skip if:
+        // 1. Slug already exists in pages
+        // 2. Slug already exists in cluster topics
+        // 3. Keyword already exists in cluster topics
+        // 4. Duplicate in current batch
+        if (existingSlugs.has(slug) || 
+            existingTopicSlugs.has(slug) ||
+            existingTopicKeywords.has(keywordLower) ||
+            seenSlugs.has(slug) ||
+            seenKeywords.has(keywordLower)) {
+          continue;
+        }
 
         // Validate categoryKey matches
         if (topic.categoryKey !== cluster.categoryKey) {
@@ -218,6 +261,7 @@ Ensure:
         });
 
         seenSlugs.add(slug);
+        seenKeywords.add(keywordLower);
         existingSlugs.add(slug); // Track in this batch too
 
         if (validTopics.length >= 40) break;
@@ -227,23 +271,38 @@ Ensure:
         throw new Error('No valid topics generated');
       }
 
-      // Update cluster
-      cluster.supportingTopics = validTopics;
+      // Update cluster: append if append=true, otherwise replace
+      if (append && cluster.supportingTopics && cluster.supportingTopics.length > 0) {
+        cluster.supportingTopics = [...cluster.supportingTopics, ...validTopics];
+        console.log(`✅ Appended ${validTopics.length} new topics to existing ${cluster.supportingTopics.length - validTopics.length} topics`);
+      } else {
+        cluster.supportingTopics = validTopics;
+        console.log(`✅ Generated ${validTopics.length} supporting topics for pillar: "${cluster.pillarKeyword}"`);
+      }
+      
       cluster.updatedAt = new Date();
       await cluster.save();
 
-      console.log(`✅ Generated ${validTopics.length} supporting topics for pillar: "${cluster.pillarKeyword}"`);
       return validTopics;
     } catch (error) {
       console.error('Error generating supporting topics:', error.message);
       
       // Fallback: generate basic topics
       const fallbackTopics = [];
-      for (let i = 1; i <= 20; i++) {
-        const slug = slugify(`${cluster.pillarKeyword} guide part ${i}`);
-        if (!existingSlugs.has(slug)) {
+      let partNumber = 1;
+      const maxParts = append ? 40 : 20; // Generate more if appending
+      
+      while (fallbackTopics.length < maxParts && partNumber <= 100) {
+        const slug = slugify(`${cluster.pillarKeyword} guide part ${partNumber}`);
+        const keyword = `${cluster.pillarKeyword} Guide Part ${partNumber}`;
+        const keywordLower = keyword.toLowerCase();
+        
+        // Check against all existing sources
+        if (!existingSlugs.has(slug) && 
+            !existingTopicSlugs.has(slug) &&
+            !existingTopicKeywords.has(keywordLower)) {
           fallbackTopics.push({
-            keyword: `${cluster.pillarKeyword} Guide Part ${i}`,
+            keyword,
             intent: 'informational',
             suggestedSlug: slug,
             status: 'planned',
@@ -251,13 +310,19 @@ Ensure:
             createdAt: new Date()
           });
         }
+        partNumber++;
       }
 
       if (fallbackTopics.length > 0) {
-        cluster.supportingTopics = fallbackTopics;
+        if (append && cluster.supportingTopics && cluster.supportingTopics.length > 0) {
+          cluster.supportingTopics = [...cluster.supportingTopics, ...fallbackTopics];
+          console.log(`⚠️  Appended ${fallbackTopics.length} fallback topics to existing topics`);
+        } else {
+          cluster.supportingTopics = fallbackTopics;
+          console.log(`⚠️  Generated ${fallbackTopics.length} fallback topics`);
+        }
         cluster.updatedAt = new Date();
         await cluster.save();
-        console.log(`⚠️  Generated ${fallbackTopics.length} fallback topics`);
       }
 
       throw error;
@@ -266,12 +331,26 @@ Ensure:
 
   /**
    * Get next N planned topics
+   * Filters out topics that already have existing pages
    */
   static async getNextPlannedTopics(tenantId, count = 2) {
     const cluster = await this.getOrCreateCluster(tenantId);
     
+    // Get existing pages to check for duplicates
+    const existingPages = await PageService.getAllPagesForTenant(tenantId);
+    const existingSlugs = new Set(existingPages.map(p => p.slug));
+    
+    // Filter topics that:
+    // 1. Are still planned (not created/skipped)
+    // 2. Don't have an existing page by slug
+    // 3. Don't already have a pageId assigned
     const planned = cluster.supportingTopics
-      .filter(t => t.status === 'planned')
+      .filter(t => {
+        if (t.status !== 'planned') return false;
+        if (t.pageId) return false; // Already has a page assigned
+        if (t.suggestedSlug && existingSlugs.has(t.suggestedSlug)) return false; // Page already exists
+        return true;
+      })
       .slice(0, count);
 
     return planned;

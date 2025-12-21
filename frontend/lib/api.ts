@@ -232,6 +232,7 @@ export async function listPagesByCategory(
 /**
  * Get page by slug
  * Cached with ISR - revalidates every hour
+ * Only returns published pages
  */
 export async function getPageBySlug(tenantId: string, slug: string): Promise<Page | null> {
   return fetchAPI<Page>(`/pages/${tenantId}/${encodeURIComponent(slug)}`, {
@@ -239,6 +240,16 @@ export async function getPageBySlug(tenantId: string, slug: string): Promise<Pag
       revalidate: 3600,
       tags: [`pages-${tenantId}`, `page-${tenantId}-${slug}`]
     }
+  });
+}
+
+/**
+ * Get page by slug for preview (includes unpublished pages)
+ * No caching - always fetches fresh data
+ */
+export async function getPageBySlugForPreview(tenantId: string, slug: string): Promise<Page | null> {
+  return fetchAPI<Page>(`/pages/preview/${tenantId}/${encodeURIComponent(slug)}`, {
+    cache: 'no-store' // No caching for preview
   });
 }
 

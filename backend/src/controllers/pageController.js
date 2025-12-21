@@ -24,6 +24,7 @@ export class PageController {
   /**
    * Get page by tenant and slug (for Next.js SSR)
    * Returns: { title, slug, meta, content, uxLayout, updatedAt }
+   * Only returns published pages
    */
   static async getBySlug(req, res, next) {
     try {
@@ -38,7 +39,36 @@ export class PageController {
         return res.status(400).json({ error: 'Invalid tenantId format' });
       }
 
-      const page = await PageService.getPageBySlug(tenantId, slug);
+      const page = await PageService.getPageBySlug(tenantId, slug, false);
+      
+      if (!page) {
+        return res.status(404).json({ error: 'Page not found' });
+      }
+      
+      res.json(page);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get page by tenant and slug for preview (includes unpublished pages)
+   * Returns: { title, slug, meta, content, uxLayout, updatedAt, published }
+   */
+  static async getBySlugForPreview(req, res, next) {
+    try {
+      const { tenantId, slug } = req.params;
+      
+      if (!tenantId || !slug) {
+        return res.status(400).json({ error: 'tenantId and slug are required' });
+      }
+
+      // Validate tenantId is a valid MongoDB ObjectId
+      if (!mongoose.Types.ObjectId.isValid(tenantId)) {
+        return res.status(400).json({ error: 'Invalid tenantId format' });
+      }
+
+      const page = await PageService.getPageBySlug(tenantId, slug, true);
       
       if (!page) {
         return res.status(404).json({ error: 'Page not found' });

@@ -67,6 +67,11 @@ const pageSchema = new mongoose.Schema({
     default: null,
     trim: true
   },
+  published: {
+    type: Boolean,
+    default: true,
+    index: true
+  },
   content: {
     type: String,
     required: true

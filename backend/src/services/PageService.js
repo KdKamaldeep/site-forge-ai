@@ -19,12 +19,20 @@ export class PageService {
   /**
    * Get page by tenant and slug (for Next.js SSR)
    * Returns formatted response with meta, uxLayout, content
+   * @param {boolean} includeUnpublished - If true, returns page even if unpublished (for preview)
    */
-  static async getPageBySlug(tenantId, slug) {
-    const page = await Page.findOne({ 
+  static async getPageBySlug(tenantId, slug, includeUnpublished = false) {
+    const query = { 
       tenantId, 
       slug: slug.toLowerCase().trim() 
-    }).select('_id title slug meta content uxLayout schemaMarkup readingTime wordCount intent monetizationMode categoryKey primaryKeyword thumbnail updatedAt createdAt isStandalone standalonePageType');
+    };
+    
+    // Only return published pages unless includeUnpublished is true
+    if (!includeUnpublished) {
+      query.published = true;
+    }
+    
+    const page = await Page.findOne(query).select('_id title slug meta content uxLayout schemaMarkup readingTime wordCount intent monetizationMode categoryKey primaryKeyword thumbnail updatedAt createdAt isStandalone standalonePageType published');
     
     if (!page) {
       return null;
@@ -35,6 +43,7 @@ export class PageService {
       id: page._id.toString(), // Also include as string for convenience
       title: page.title,
       slug: page.slug,
+      published: page.published !== undefined ? page.published : true, // Include published status
       meta: {
         title: page.meta?.title || page.title,
         description: page.meta?.description || '',
@@ -62,11 +71,13 @@ export class PageService {
 
   /**
    * Get homepage for a tenant
+   * Only returns published homepage
    */
   static async getHomePage(tenantId) {
     const page = await Page.findOne({ 
       tenantId, 
-      isHome: true 
+      isHome: true,
+      published: true 
     }).select('title slug meta content uxLayout schemaMarkup readingTime wordCount thumbnail updatedAt');
     
     if (!page) {
@@ -100,12 +111,14 @@ export class PageService {
    * List all pages for a tenant (for sitemap/menus)
    * Returns pages with essential fields for listing, sorted by updatedAt (newest first)
    * Excludes standalone pages (they appear only in footer)
+   * Only returns published pages
    */
   static async listPagesForTenant(tenantId) {
-    // Exclude standalone pages from regular listings
+    // Exclude standalone pages and unpublished pages from regular listings
     const pages = await Page.find({ 
       tenantId,
-      isStandalone: { $ne: true } // Exclude standalone pages
+      isStandalone: { $ne: true }, // Exclude standalone pages
+      published: true // Only published pages
     })
       .select('_id slug title meta categoryKey readingTime wordCount thumbnail updatedAt isStandalone isHome')
       .sort({ updatedAt: -1 }); // Newest first
@@ -149,11 +162,13 @@ export class PageService {
   /**
    * List pages for a tenant
    * Excludes standalone pages (they only appear in standalone API and slug lookups)
+   * Only returns published pages
    */
   static async listPages(tenantId) {
     return await Page.find({ 
       tenantId,
-      isStandalone: { $ne: true } // Exclude standalone pages
+      isStandalone: { $ne: true }, // Exclude standalone pages
+      published: true // Only published pages
     })
       .sort({ updatedAt: -1 })
       .select('-content -uxLayout -schemaMarkup')
@@ -170,9 +185,13 @@ export class PageService {
   /**
    * Get all pages for a tenant (for sitemap/internal linking)
    * Excludes standalone pages by default
+   * Only returns published pages (for sitemap/linking)
    */
   static async getAllPagesForTenant(tenantId, includeStandalone = false) {
-    const query = { tenantId };
+    const query = { 
+      tenantId,
+      published: true // Only published pages for sitemap/linking
+    };
     if (!includeStandalone) {
       query.isStandalone = { $ne: true }; // Exclude standalone pages
     }
@@ -188,11 +207,13 @@ export class PageService {
 
   /**
    * Get standalone pages for a tenant
+   * Only returns published standalone pages
    */
   static async getStandalonePages(tenantId) {
     const pages = await Page.find({ 
       tenantId, 
-      isStandalone: true 
+      isStandalone: true,
+      published: true // Only published standalone pages
     })
     .select('_id title slug standalonePageType updatedAt createdAt')
     .sort({ standalonePageType: 1 }) // Sort by page type for consistent ordering

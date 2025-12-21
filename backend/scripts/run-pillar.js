@@ -439,7 +439,7 @@ async function runPillarGeneration() {
     const args = process.argv.slice(2);
     
     if (args.length < 1) {
-      console.error('❌ Usage: node scripts/run-pillar.js <domain> [--count N] [--category CATEGORY] [--slug SLUG] [--gen-logo] [--standalonePagesOnly]');
+      console.error('❌ Usage: node scripts/run-pillar.js <domain> [--count N] [--category CATEGORY] [--slug SLUG] [--gen-logo] [--gen-standalone] [--standalonePagesOnly]');
       console.error('');
       console.error('Examples:');
       console.error('   # Process all categories (default)');
@@ -454,6 +454,7 @@ async function runPillarGeneration() {
       console.error('   # Other options');
       console.error('   node scripts/run-pillar.js example.com --slug how-to-use-ai');
       console.error('   node scripts/run-pillar.js example.com --gen-logo');
+      console.error('   node scripts/run-pillar.js example.com --gen-standalone');
       console.error('   node scripts/run-pillar.js example.com --standalonePagesOnly');
       console.error('');
       console.error('Options:');
@@ -461,7 +462,8 @@ async function runPillarGeneration() {
       console.error('   --category KEY         Process only the specified category');
       console.error('   --slug SLUG            Regenerate the page with the specified slug');
       console.error('   --gen-logo            Generate and set logo for tenant (does nothing else)');
-      console.error('   --standalonePagesOnly Generate only standalone pages (Privacy Policy, About Us, etc.)');
+      console.error('   --gen-standalone       Generate standalone pages (Privacy Policy, About Us, etc.)');
+      console.error('   --standalonePagesOnly  Generate ONLY standalone pages (does nothing else)');
       console.error('');
       console.error('This will create the specified number of pages for EACH pillar/category.');
       process.exit(1);
@@ -500,6 +502,9 @@ async function runPillarGeneration() {
     // Parse --gen-favicon flag
     const genFavicon = args.includes('--gen-favicon');
 
+    // Parse --gen-standalone flag
+    const genStandalone = args.includes('--gen-standalone');
+
     // Parse --standalonePagesOnly flag
     const standalonePagesOnly = args.includes('--standalonePagesOnly');
 
@@ -528,7 +533,7 @@ async function runPillarGeneration() {
       console.log(`\n🆕 NEW TENANT DETECTED: Auto-generating logo, favicon, and standalone pages...`);
       console.log('='.repeat(70));
     } else {
-      console.log(`\n📋 EXISTING TENANT: Will honor flags (--gen-logo, --gen-favicon, etc.)`);
+      console.log(`\n📋 EXISTING TENANT: Will honor flags (--gen-logo, --gen-favicon, --gen-standalone, etc.)`);
       console.log('='.repeat(70));
     }
 
@@ -932,11 +937,11 @@ async function runPillarGeneration() {
     console.log(`✅ Found tenant: ${tenant.name} (${tenant.domain})`);
 
     // STEP 2: Generate standalone pages
-    // For new tenants: Always generate standalone pages
-    // For existing tenants: Only in normal mode (not with flags like --category, --slug, etc.)
+    // For new tenants: Only generate standalone pages if no specific targeting flags are set (--category, --slug, etc.)
+    // For existing tenants: Only if --gen-standalone flag is set
     const shouldGenerateStandalonePages = isNewTenant 
-      ? true
-      : (!targetSlug && !targetCategory && !genLogo && !standalonePagesOnly);
+      ? (!targetSlug && !targetCategory && !genLogo && !standalonePagesOnly)
+      : genStandalone;
     
     // Re-fetch tenant to ensure we have standalonePages field
     const fullTenantForStandalone = await TenantService.getTenantById(tenantId);
@@ -1009,9 +1014,10 @@ async function runPillarGeneration() {
       }
       
       console.log('='.repeat(70) + '\n');
-    } else if (isNewTenant && (!fullTenantForStandalone?.standalonePages || fullTenantForStandalone.standalonePages.length === 0)) {
-      console.log(`\n⚠️  New tenant has no standalone pages configured`);
-      console.log(`   Configure standalonePages in tenant.standalonePages array\n`);
+    } else if (genStandalone && (!fullTenantForStandalone?.standalonePages || fullTenantForStandalone.standalonePages.length === 0)) {
+      console.log(`\n⚠️  Tenant has no standalone pages configured`);
+      console.log(`   Configure standalonePages in tenant.standalonePages array`);
+      console.log(`   Or use --standalonePagesOnly flag to generate standalone pages only\n`);
     }
 
     // Handle --slug mode: regenerate a specific page

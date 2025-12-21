@@ -260,11 +260,13 @@ export class MicrositeBuilderAgent {
 
             // 10. Create page (slug is unique and stable, ensuring no conflicts)
             // Note: categoryKey and primaryKeyword will be set by GenerationService after creation
+            // New pages are created as unpublished (published: false) by default
             const page = await PageService.createPage({
               tenantId,
               title: topic,
               slug: slug, // Stable slug ensures uniqueness
               content: contentData.content,
+              published: false, // New pages are unpublished by default
               meta: {
                 title: contentData.metaTitle || topic,
                 description: contentData.metaDescription || contentData.content.substring(0, 160),
@@ -328,25 +330,15 @@ export class MicrositeBuilderAgent {
         }
       }
 
-      // 5. Build internal linking
-      try {
-        console.log('🔗 Building internal links...');
-        await InternalLinkingService.refreshAllLinks(tenantId);
-        console.log('✅ Internal links updated');
-      } catch (error) {
-        console.error('❌ Error building internal links:', error.message);
-        results.errors.push({ step: 'internalLinking', error: error.message });
-      }
+      // 5. Skip internal linking for unpublished pages
+      // Pages are created as unpublished, so skip linking until they're published
+      console.log('⏭️  Skipping internal linking (pages are unpublished)');
+      console.log('   Run publish-page.js script to publish pages and update internal links');
 
-      // 6. Update sitemap
-      try {
-        console.log('🗺️  Updating sitemap...');
-        await SitemapService.updateSitemap(tenantId);
-        console.log('✅ Sitemap updated');
-      } catch (error) {
-        console.error('❌ Error updating sitemap:', error.message);
-        results.errors.push({ step: 'sitemap', error: error.message });
-      }
+      // 6. Skip sitemap update for unpublished pages
+      // Pages are created as unpublished, so skip sitemap until they're published
+      console.log('⏭️  Skipping sitemap update (pages are unpublished)');
+      console.log('   Run publish-page.js script to publish pages and update sitemap');
 
       // 7. Update navigation menu (auto-generate from all pages)
       try {

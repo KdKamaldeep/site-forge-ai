@@ -29,3 +29,5 @@ node scripts/run-pillar.js example.com --category fitness
 
 # Process all categories (when no --category specified)
 node scripts/run-pillar.js example.com --count 3
+
+preview/[slug]/page.tsx
