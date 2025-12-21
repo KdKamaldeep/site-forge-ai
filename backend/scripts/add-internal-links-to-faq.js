@@ -216,11 +216,15 @@ async function main() {
         console.log(`📂 Processing category: ${catKey}`);
         console.log('='.repeat(60));
 
-        // Get all pages in this category
+        // Get all pages in this category (only published pages)
         const categoryPages = await Page.find({
           tenantId: new mongoose.Types.ObjectId(tenantId),
           categoryKey: catKey,
-          isStandalone: { $ne: true }
+          isStandalone: { $ne: true },
+          $or: [
+            { published: true },
+            { published: { $exists: false } }
+          ]
         }).lean();
 
         if (categoryPages.length === 0) {
@@ -292,9 +296,14 @@ async function main() {
 
     if (slug) {
       // Process specific page - use Page model directly to get full object with uxLayout
+      // Only process published pages (or pages without published field for backward compatibility)
       const page = await Page.findOne({ 
         tenantId: new mongoose.Types.ObjectId(tenantId),
-        slug: slug.toLowerCase().trim()
+        slug: slug.toLowerCase().trim(),
+        $or: [
+          { published: true },
+          { published: { $exists: false } }
+        ]
       }).lean();
 
       if (!page) {
@@ -312,10 +321,15 @@ async function main() {
       console.log(`\n🎯 Processing single page: ${page.title}`);
     } else {
       // Process all pages in category - get full page objects with uxLayout
+      // Only process published pages (or pages without published field for backward compatibility)
       const categoryPages = await Page.find({
         tenantId: new mongoose.Types.ObjectId(tenantId),
         categoryKey: categoryKey,
-        isStandalone: { $ne: true }
+        isStandalone: { $ne: true },
+        $or: [
+          { published: true },
+          { published: { $exists: false } }
+        ]
       }).lean();
 
       if (categoryPages.length === 0) {
