@@ -87,6 +87,7 @@ export interface Page {
   primaryKeyword?: string;
   updatedAt?: string;
   publishedAt?: string;
+  published?: boolean;
   isStandalone?: boolean;
   thumbnail?: {
     url?: string | null;

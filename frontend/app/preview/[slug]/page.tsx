@@ -77,8 +77,23 @@ export default async function PreviewPage({ params }: { params: { slug: string }
             ⚠️ PREVIEW MODE - This page is not published
           </div>
         )}
-        <SchemaMarkup schema={page.schemaMarkup} />
-        <PageRenderer page={page} />
+        <PageRenderer
+          layout={page.uxLayout}
+          content={page.content}
+          meta={page.meta}
+          title={page.title}
+          schemaMarkup={page.schemaMarkup}
+          readingTime={page.readingTime}
+          wordCount={page.wordCount}
+          intent={page.intent}
+          monetizationMode={page.monetizationMode}
+          categoryKey={page.categoryKey}
+          thumbnail={page.thumbnail}
+          isStandalone={page.isStandalone}
+          updatedAt={page.updatedAt}
+          publishedAt={page.publishedAt}
+          adsenseId={context.tenant?.adsenseId}
+        />
       </>
     );
   } catch (error) {
