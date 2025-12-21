@@ -44,6 +44,12 @@ CRITICAL: You MUST return a JSON object with this EXACT structure:
     { "type": "hero", "title": "...", "subtitle": "...", "image": "..." },
     { "type": "paragraph", "text": "..." },
     { "type": "grid", "columns": number (1-4), "items": Array<{title: string, text: string, image?: string}> },
+    { "type": "infoBox", "title": "...", "text": "...", "variant": "info"|"warning"|"success" },
+    { "type": "cta", "text": "...", "link": "...", "variant": "primary"|"secondary" },
+    { "type": "imageBlock", "image": "...", "caption": "..." },
+    { "type": "featureList", "items": Array<{title: string, description: string, image: string}> },
+    { "type": "comparisonTable", "headers": string[], "rows": Array<Array<string>> },
+    { "type": "faq", "title": "...", "items": Array<{question: string, answer: string}> },
     ...
   ]
 }

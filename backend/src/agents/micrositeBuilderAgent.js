@@ -50,8 +50,9 @@ export class MicrositeBuilderAgent {
           const slug = slugify(topic);
           
           // Check if page with this exact slug already exists for this tenant
+          // Include unpublished pages to avoid duplicate key errors
           // This ensures we only update pages with matching slugs, never unrelated pages
-          const existingPage = await PageService.getPageBySlug(tenantId, slug);
+          const existingPage = await PageService.getPageBySlug(tenantId, slug, true); // includeUnpublished = true
           
           if (existingPage) {
             // Page with this slug exists → UPDATE it (never delete, never overwrite unrelated pages)

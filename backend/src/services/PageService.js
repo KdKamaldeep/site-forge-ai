@@ -159,10 +159,9 @@ export class PageService {
    * Update page
    */
   static async updatePage(id, updates) {
-    // Ensure updatedAt is set
-    if (!updates.updatedAt) {
-      updates.updatedAt = new Date();
-    }
+    // Don't automatically set updatedAt - let MongoDB timestamps handle it
+    // Only set updatedAt explicitly if it's provided in updates
+    // This preserves original dates and only updates when content actually changes
     return await Page.findByIdAndUpdate(
       id,
       { $set: updates },

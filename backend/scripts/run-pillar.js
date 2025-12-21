@@ -1025,7 +1025,7 @@ async function runPillarGeneration() {
       console.log(`\n🔄 SLUG MODE: Regenerating page with slug: ${targetSlug}`);
       console.log('='.repeat(70));
       
-      const page = await PageService.getPageBySlug(tenantId, targetSlug);
+      const page = await PageService.getPageBySlug(tenantId, targetSlug, true);
       if (!page) {
         console.error(`❌ Page not found with slug: ${targetSlug}`);
         await mongoose.disconnect();

@@ -112,13 +112,14 @@ async function addRelatedPagesToPage(page, tenantId) {
 
   try {
     // Get all pages in the same category (excluding standalone pages and current page)
+    // getAllPagesForTenant already filters by published, so we just need to filter by category
     const allPages = await PageService.getAllPagesForTenant(tenantId, false);
     const categoryPages = allPages
       .filter(p => 
         p.categoryKey === page.categoryKey && 
         !p.isStandalone &&
         p._id.toString() !== page._id.toString() &&
-        p.published === true // Only include published pages
+        p.published !== false // Exclude explicitly unpublished pages (include true and undefined)
       )
       .map(p => ({
         ...p,
