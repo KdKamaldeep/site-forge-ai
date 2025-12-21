@@ -39,10 +39,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     title: `[PREVIEW] ${title} | ${brandName}`,
     description: description ? `[PREVIEW] ${description}` : `Preview of ${title}`,
     alternates: { canonical },
-    robots: {
-      noindex: true, // Don't index preview pages
-      nofollow: true,
-    },
+    robots: 'noindex, nofollow', // Don't index preview pages
   };
 }
 
