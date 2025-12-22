@@ -239,16 +239,6 @@ async function publishPage() {
       console.error('   Continuing with internal linking...\n');
     }
 
-    // 3. Generate internal links
-    console.log('🔗 Step 3: Generating internal links...');
-    try {
-      await InternalLinkingService.refreshAllLinks(tenantId);
-      console.log('✅ Internal links generated successfully\n');
-    } catch (error) {
-      console.error('❌ Error generating internal links:', error.message);
-      console.error('   Page is published, but links may need manual review\n');
-    }
-
     // 4. Add related pages section (if page has a category)
     console.log('📎 Step 4: Adding related pages section...');
     try {
