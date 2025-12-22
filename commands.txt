@@ -22,7 +22,7 @@ node scripts/add-internal-links-to-faq.js 693db57edeafaf32e8b75427 smart-devices
 
 
 # Process specific category with 1 page
-node scripts/run-pillar.js www.lavanyaverse.com --category smart-devices --count 1
+node scripts/run-pillar.js www.lavanyaverse.com --category diy-fixes --count 1
 
 # Process specific category with default count (3)
 node scripts/run-pillar.js example.com --category fitness
@@ -31,3 +31,5 @@ node scripts/run-pillar.js example.com --category fitness
 node scripts/run-pillar.js example.com --count 3
 
 preview/[slug]/page.tsx
+
+node scripts/publish-page.js www.lavanyaverse.com seasonal-home-maintenance-tips-to-follow
