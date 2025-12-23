@@ -127,8 +127,8 @@ export default function FeaturedArticles({ articles }) {
                           </span>
                         )}
                       </div>
-                    ) : (
-                    <div className={styles.largeImagePlaceholder}>
+                      ) : (
+                      <div className={styles.largeImagePlaceholder}>
                       {rightArticle.categoryKey && (
                         <span 
                           className={styles.largeCategoryBadge}
@@ -139,9 +139,10 @@ export default function FeaturedArticles({ articles }) {
                             .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                             .join(' ')}
                         </span>
-                      )}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                      );
+                    })()}
                   <div className={styles.largeContent}>
                     <h2 className={styles.largeTitle}>{rightArticle.title}</h2>
                     <div className={styles.largeMeta}>

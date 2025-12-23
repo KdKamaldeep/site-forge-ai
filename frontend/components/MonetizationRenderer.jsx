@@ -10,11 +10,6 @@ import { useEffect, useRef } from 'react';
 export default function MonetizationRenderer({ content, intent, monetizationMode, children }) {
   const contentRef = useRef(null);
 
-  // If children provided (ArticleLayout), render it instead
-  if (children) {
-    return children;
-  }
-
   useEffect(() => {
     if (!contentRef.current) return;
 
@@ -151,6 +146,11 @@ export default function MonetizationRenderer({ content, intent, monetizationMode
       }
     });
   }, [content, intent, monetizationMode]);
+
+  // If children provided (ArticleLayout), render it instead
+  if (children) {
+    return children;
+  }
 
   return (
     <div 

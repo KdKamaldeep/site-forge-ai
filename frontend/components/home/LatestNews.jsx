@@ -167,7 +167,8 @@ export default function LatestNews({ articles, categories = [] }) {
                         </span>
                       )}
                     </div>
-                  )}
+                    );
+                  })()}
                   <div className={styles.largeContent}>
                     <h2 className={styles.largeTitle}>{rightArticle.title}</h2>
                     <div className={styles.largeMeta}>

@@ -79,7 +79,8 @@ export default function EditorPicks({ articles, title = "Editor Pick's" }) {
                         </span>
                       )}
                     </div>
-                  )}
+                    );
+                  })()}
                   <div className={styles.articleContent}>
                     <h3 className={styles.articleTitle}>{article.title}</h3>
                     <div className={styles.articleMeta}>

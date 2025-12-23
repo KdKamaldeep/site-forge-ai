@@ -13,7 +13,7 @@ export default function SocialLinks() {
   return (
     <section className={styles.socialLinks}>
       <div className={styles.header}>
-        <h3 className={styles.title}>Let's Hang Out On Social</h3>
+        <h3 className={styles.title}>Let&apos;s Hang Out On Social</h3>
         <button className={styles.scrollButton} aria-label="Scroll up">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="18 15 12 9 6 15"/>

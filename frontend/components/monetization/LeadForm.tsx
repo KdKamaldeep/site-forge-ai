@@ -79,7 +79,7 @@ export default function LeadForm({ tenantId, ctaStyle = 'form', whatsappNumber }
         <h3 style={{ marginTop: 0 }}>Contact Us</h3>
         {submitted ? (
           <div style={{ padding: '1rem', backgroundColor: '#d4edda', borderRadius: '4px', color: '#155724' }}>
-            Thank you! We'll get back to you soon.
+            Thank you! We&apos;ll get back to you soon.
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -174,7 +174,7 @@ export default function LeadForm({ tenantId, ctaStyle = 'form', whatsappNumber }
       
       {submitted ? (
         <div style={{ padding: '1rem', backgroundColor: '#d4edda', borderRadius: '4px', color: '#155724' }}>
-          Thank you! We'll get back to you soon.
+          Thank you! We&apos;ll get back to you soon.
         </div>
       ) : (
         <>
