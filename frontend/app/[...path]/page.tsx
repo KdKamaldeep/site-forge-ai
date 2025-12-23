@@ -47,7 +47,19 @@ export async function generateMetadata({ params }: { params: { path: string | st
     }
 
     const title = page.meta?.title || page.title;
-    const description = page.meta?.description || '';
+    // Clean description: remove any HTML tags (including meta tags) and decode entities
+    const rawDescription = page.meta?.description || '';
+    const description = rawDescription
+      .replace(/<meta[^>]*>/gi, '') // Remove meta tags first
+      .replace(/<[^>]*>/g, '') // Remove all other HTML tags
+      .replace(/&nbsp;/g, ' ') // Replace &nbsp; with space
+      .replace(/&amp;/g, '&') // Decode &amp;
+      .replace(/&lt;/g, '<') // Decode &lt;
+      .replace(/&gt;/g, '>') // Decode &gt;
+      .replace(/&quot;/g, '"') // Decode &quot;
+      .replace(/&#39;/g, "'") // Decode &#39;
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
     const canonical = `https://${context.tenant?.domain || ''}/${categoryKey}/${slug}`;
 
     return {

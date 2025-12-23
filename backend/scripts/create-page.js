@@ -863,7 +863,30 @@ CRITICAL: Write content as pure HTML. Do NOT use markdown syntax, code blocks, o
     cleanedContent = cleanedContent.trim();
     
     // Extract meta information (simplified - reuse MicrositeBuilderAgent methods if available)
-    const metaDescription = cleanedContent.substring(0, 160).replace(/<[^>]+>/g, '').trim();
+    // Remove HTML tags (including meta tags) and decode HTML entities
+    let metaDescription = cleanedContent
+      .replace(/<meta[^>]*>/gi, '') // Remove meta tags first
+      .replace(/<[^>]+>/g, '') // Remove all other HTML tags
+      .replace(/&nbsp;/g, ' ') // Replace &nbsp; with space
+      .replace(/&amp;/g, '&') // Decode &amp;
+      .replace(/&lt;/g, '<') // Decode &lt;
+      .replace(/&gt;/g, '>') // Decode &gt;
+      .replace(/&quot;/g, '"') // Decode &quot;
+      .replace(/&#39;/g, "'") // Decode &#39;
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim()
+      .substring(0, 160)
+      .trim();
+    
+    // Find a good breaking point (sentence end or word boundary)
+    if (metaDescription.length >= 157) {
+      const lastSpace = metaDescription.lastIndexOf(' ');
+      if (lastSpace > 120) {
+        metaDescription = metaDescription.substring(0, lastSpace) + '...';
+      } else {
+        metaDescription = metaDescription.substring(0, 157) + '...';
+      }
+    }
     const metaTitle = story.title;
     const author = {
       name: tenant.name || 'Content Team',

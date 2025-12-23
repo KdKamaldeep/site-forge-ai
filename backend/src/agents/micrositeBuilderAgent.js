@@ -651,8 +651,19 @@ CRITICAL: Every article you write MUST be at least 1000 words. Write substantial
    * Extract meta description from content (first 155-160 characters)
    */
   static extractMetaDescription(content) {
-    // Remove HTML tags for description
-    const plainText = content.replace(/<[^>]*>/g, '').trim();
+    // Remove HTML tags (including meta tags) and decode HTML entities
+    let plainText = content
+      .replace(/<meta[^>]*>/gi, '') // Remove meta tags first
+      .replace(/<[^>]*>/g, '') // Remove all other HTML tags
+      .replace(/&nbsp;/g, ' ') // Replace &nbsp; with space
+      .replace(/&amp;/g, '&') // Decode &amp;
+      .replace(/&lt;/g, '<') // Decode &lt;
+      .replace(/&gt;/g, '>') // Decode &gt;
+      .replace(/&quot;/g, '"') // Decode &quot;
+      .replace(/&#39;/g, "'") // Decode &#39;
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+    
     if (plainText.length <= 160) return plainText;
     
     // Find a good breaking point (sentence end or word boundary)
