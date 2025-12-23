@@ -414,7 +414,11 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
     const title = section.title.toLowerCase();
     return !title.includes('frequently asked questions') && 
            !title.includes('faq') && 
-           title !== 'faq';
+           title !== 'faq' &&
+           !title.includes('conclusion') &&
+           !title.includes('summary') &&
+           !title.includes('introduction') &&
+           !title.includes('overview');
   });
   
   // Validate we have enough H2 sections for all scenes
@@ -422,11 +426,80 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
     throw new Error(`Gemini output has ${sceneH2Sections.length} scene H2 sections but ${scenes.length} scenes are required`);
   }
   
-  // Map scene sections to H2 sections (one-to-one)
+  /**
+   * Match scene to H2 section based on visual_reference similarity
+   * Returns the best matching H2 section index
+   */
+  function findBestMatchingH2(scene, availableH2Sections, usedIndices) {
+    const visualRef = scene.visual_reference.toLowerCase();
+    const visualWords = visualRef.split(/\s+/).filter(w => w.length > 3); // Key words from visual_reference
+    
+    let bestMatch = null;
+    let bestScore = 0;
+    
+    availableH2Sections.forEach((h2Section, index) => {
+      if (usedIndices.has(index)) return; // Skip already used sections
+      
+      const h2Title = h2Section.title.toLowerCase();
+      const h2Content = h2Section.content.toLowerCase();
+      const h2Text = `${h2Title} ${h2Content}`;
+      
+      // Calculate similarity score
+      let score = 0;
+      
+      // Check if visual_reference words appear in H2 title or content
+      visualWords.forEach(word => {
+        if (h2Title.includes(word)) score += 3; // Title match is stronger
+        if (h2Content.includes(word)) score += 1; // Content match
+      });
+      
+      // Bonus if visual_reference phrase appears in title
+      if (h2Title.includes(visualRef)) score += 5;
+      
+      // Prefer earlier sections (Gemini should follow order, but we allow flexibility)
+      if (index < scenes.length) score += 0.5;
+      
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = index;
+      }
+    });
+    
+    // Fallback: if no good match, use the first unused section
+    if (bestMatch === null || bestScore === 0) {
+      for (let i = 0; i < availableH2Sections.length; i++) {
+        if (!usedIndices.has(i)) {
+          return i;
+        }
+      }
+    }
+    
+    return bestMatch;
+  }
+  
+  // Map scenes to H2 sections using semantic matching
+  const usedH2Indices = new Set();
+  const sceneToH2Map = new Map(); // scene.id -> h2Section
+  
   scenes.forEach((scene, sceneIndex) => {
-    const h2Section = sceneH2Sections[sceneIndex];
+    const matchedH2Index = findBestMatchingH2(scene, sceneH2Sections, usedH2Indices);
+    
+    if (matchedH2Index === null || matchedH2Index === undefined) {
+      throw new Error(`Could not find matching H2 section for scene ${sceneIndex} (id: ${scene.id}, visual_reference: ${scene.visual_reference})`);
+    }
+    
+    const h2Section = sceneH2Sections[matchedH2Index];
+    usedH2Indices.add(matchedH2Index);
+    sceneToH2Map.set(scene.id, h2Section);
+    
+    console.log(`   ✅ Matched Scene ${sceneIndex + 1} (${scene.visual_reference}) → H2: "${h2Section.title}"`);
+  });
+  
+  // Build paragraph sections with images in scene order
+  scenes.forEach((scene, sceneIndex) => {
+    const h2Section = sceneToH2Map.get(scene.id);
     if (!h2Section) {
-      throw new Error(`Gemini output missing H2 section for scene ${sceneIndex} (id: ${scene.id})`);
+      throw new Error(`No H2 section mapped for scene ${sceneIndex} (id: ${scene.id})`);
     }
     
     const sceneId = scene.id;
