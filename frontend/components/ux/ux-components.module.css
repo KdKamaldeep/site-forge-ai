@@ -67,6 +67,32 @@
   font-weight: 500;
 }
 
+/* New layout: Paragraph with title and image */
+.paragraphTitle {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.paragraphImageBlock {
+  margin: 2rem 0;
+}
+
+.paragraphImageWrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.paragraphImage {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .gridSection {
   padding: 3rem 2rem;
   max-width: 1200px;

@@ -5,9 +5,9 @@ node scripts/run-pillar.js example.com
 node scripts/run-pillar.js example.com --count 5
 
 # Generate 1 page for each pillar
-node scripts/run-pillar.js SmartHomeTricks.com --count 3
+node scripts/run-pillar.js SmartHomeTricks.com --count 1
 
-node scripts/run-pillar.js www.lavanyaverse.com --slug beginners-guide-to-smart-plugs
+node scripts/run-pillar.js www.lavanyaverse.com --slug how-to-install-smart-lights
 
 node scripts/run-pillar.js SmartHomeTricks.com --category technology
 
@@ -18,8 +18,7 @@ node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011
 node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011 nutrition
 
 # Process a specific page
-node scripts/add-internal-links-to-faq.js 693db57edeafaf32e8b75427 smart-devices beginners-guide-to-smart-plugs
-
+node scripts/add-internal-links-to-faq.js 693db57edeafaf32e8b75427 smart-devices how-to-install-smart-lights
 
 # Process specific category with 1 page
 node scripts/run-pillar.js www.lavanyaverse.com --category smart-devices --count 1
@@ -29,5 +28,8 @@ node scripts/run-pillar.js example.com --category fitness
 
 # Process all categories (when no --category specified)
 node scripts/run-pillar.js example.com --count 3
+
+#publish page
+node scripts/publish-page.js www.lavanyaverse.com how-to-install-smart-lights
 
 preview/[slug]/page.tsx
