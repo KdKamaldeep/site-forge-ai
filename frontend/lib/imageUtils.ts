@@ -93,8 +93,9 @@ export function getYouTubeVideoId(url: string | null | undefined): string | null
 
 /**
  * Get YouTube thumbnail URL from video ID
- * Returns maxresdefault thumbnail URL (1280x720) or null
+ * Uses hqdefault.jpg (480x360) as it's more widely available than maxresdefault.jpg
+ * Falls back to maxresdefault.jpg if needed, but hqdefault is more reliable
  */
 export function getYouTubeThumbnailUrl(videoId: string): string {
-  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 }

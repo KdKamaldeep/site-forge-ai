@@ -8,12 +8,17 @@ const nextConfig = {
   },
 
   images: {
-    // ✅ Only allow your S3 bucket
+    // ✅ Only allow your S3 bucket and YouTube thumbnails
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'site-forge-ai.s3.amazonaws.com',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+        pathname: '/vi/**',
       },
     ],
 

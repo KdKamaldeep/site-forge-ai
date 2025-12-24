@@ -349,6 +349,27 @@ function extractH2Sections(content) {
 }
 
 /**
+ * Extract YouTube video ID from URL
+ * Supports:
+ * - https://www.youtube.com/watch?v=VIDEO_ID
+ * - https://youtu.be/VIDEO_ID
+ * - https://www.youtube.com/embed/VIDEO_ID
+ * - https://m.youtube.com/watch?v=VIDEO_ID
+ * Returns video ID or null
+ */
+function extractYouTubeVideoId(url) {
+  if (!url) return null;
+  
+  // Match youtube.com/watch?v=VIDEO_ID or youtube.com/embed/VIDEO_ID
+  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\n?#]+)/);
+  if (youtubeMatch && youtubeMatch[1]) {
+    return youtubeMatch[1];
+  }
+  
+  return null;
+}
+
+/**
  * Build video-backed UX layout from scenes and Gemini content
  */
 function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, youtubeVideoUrl) {
@@ -389,13 +410,16 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
   // 3. YouTube video embed section (insert after intro, before scenes)
   if (youtubeVideoUrl) {
     // Convert YouTube URL to embed format
+    const videoId = extractYouTubeVideoId(youtubeVideoUrl);
     let embedUrl = youtubeVideoUrl;
-    if (embedUrl.includes('watch?v=')) {
-      const videoId = embedUrl.split('watch?v=')[1].split('&')[0];
+    if (videoId) {
       embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    } else if (embedUrl.includes('watch?v=')) {
+      const extractedId = embedUrl.split('watch?v=')[1].split('&')[0];
+      embedUrl = `https://www.youtube.com/embed/${extractedId}`;
     } else if (embedUrl.includes('youtu.be/')) {
-      const videoId = embedUrl.split('youtu.be/')[1].split('?')[0];
-      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+      const extractedId = embedUrl.split('youtu.be/')[1].split('?')[0];
+      embedUrl = `https://www.youtube.com/embed/${extractedId}`;
     }
     
     // Create a paragraph section with YouTube embed HTML
@@ -959,13 +983,18 @@ CRITICAL: Write content as pure HTML. Do NOT use markdown syntax, code blocks, o
     // D) CREATE PAGE
     console.log(`\n📄 Creating page...`);
     
+    // Prepare thumbnail: if YouTube URL is provided, use it as thumbnail URL
+    const thumbnail = youtubeVideoUrl ? {
+      url: youtubeVideoUrl
+    } : null;
+    
     // Check if page already exists
     const existingPage = await PageService.getPageBySlug(tenantId, pageSlug, true);
     
     if (existingPage) {
       console.log(`⚠️  Page with slug "${pageSlug}" already exists. Updating...`);
       
-      await PageService.updatePage(existingPage._id, {
+      const updateData = {
         title: story.title,
         content: contentData.content,
         meta: {
@@ -982,11 +1011,19 @@ CRITICAL: Write content as pure HTML. Do NOT use markdown syntax, code blocks, o
         wordCount,
         categoryKey: category,
         primaryKeyword: keywords[0] || story.title
-      });
+      };
+      
+      // Set thumbnail if YouTube URL is provided
+      if (thumbnail) {
+        updateData.thumbnail = thumbnail;
+        console.log(`   📸 Setting thumbnail to YouTube URL: ${youtubeVideoUrl}`);
+      }
+      
+      await PageService.updatePage(existingPage._id, updateData);
       
       console.log(`✅ Page updated: "${story.title}" (slug: ${pageSlug})`);
     } else {
-      const page = await PageService.createPage({
+      const pageData = {
         tenantId,
         title: story.title,
         slug: pageSlug,
@@ -1010,7 +1047,15 @@ CRITICAL: Write content as pure HTML. Do NOT use markdown syntax, code blocks, o
         qualityScore: qualityCheck.score,
         intent: 'informational',
         monetizationMode: 'adsense'
-      });
+      };
+      
+      // Set thumbnail if YouTube URL is provided
+      if (thumbnail) {
+        pageData.thumbnail = thumbnail;
+        console.log(`   📸 Setting thumbnail to YouTube URL: ${youtubeVideoUrl}`);
+      }
+      
+      const page = await PageService.createPage(pageData);
       
       console.log(`✅ Page created: "${story.title}" (slug: ${pageSlug})`);
     }
