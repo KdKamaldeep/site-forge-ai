@@ -104,6 +104,13 @@
   gap: 2rem;
 }
 
+/* Responsive: Stack to 1 column on mobile */
+@media (max-width: 768px) {
+  .gridContainer {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .gridItem {
   background: var(--background);
   border: 1px solid #e0e0e0;

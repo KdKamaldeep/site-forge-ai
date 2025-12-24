@@ -9,15 +9,22 @@ import { normalizeImageUrl } from '@/lib/imageUtils';
  * - Lazy-loaded since grids are typically below the fold
  * - Responsive sizing based on grid columns
  */
-export default function Grid({ columns, items, ...props }) {
+export default function Grid({ columns = 2, items, ...props }) {
+  // Ensure columns is at least 1 and at most 4
+  const gridColumns = Math.max(1, Math.min(4, columns || 2));
+  
   const gridStyle = {
-    gridTemplateColumns: `repeat(${columns}, 1fr)`,
+    gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
   };
+
+  if (!items || items.length === 0) {
+    return null;
+  }
 
   return (
     <section className={styles.gridSection} {...props}>
       <div className={styles.gridContainer} style={gridStyle}>
-        {items?.map((item, index) => {
+        {items.map((item, index) => {
           const normalizedImage = normalizeImageUrl(item.image);
           return (
             <div key={index} className={styles.gridItem}>
@@ -28,10 +35,10 @@ export default function Grid({ columns, items, ...props }) {
                       - Responsive sizes based on grid layout */}
                   <Image
                     src={normalizedImage}
-                    alt={item.title || ''}
+                    alt={item.title || `Grid item ${index + 1}`}
                     width={600}
                     height={400}
-                    sizes={`(max-width: 768px) 100vw, (100vw / ${columns})`}
+                    sizes={`(max-width: 768px) 100vw, (100vw / ${gridColumns})`}
                     quality={70}
                     style={{
                       width: '100%',

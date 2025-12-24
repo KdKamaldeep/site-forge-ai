@@ -349,6 +349,111 @@ function extractH2Sections(content) {
 }
 
 /**
+ * Extract list items from content (for grid/featureList)
+ * Looks for <ul>, <ol>, or H3 headings
+ */
+function extractListItems(content, minItems = 2) {
+  const items = [];
+  
+  // Try to extract from <ul> or <ol> lists
+  const listRegex = /<(ul|ol)[^>]*>([\s\S]*?)<\/\1>/gi;
+  let listMatch;
+  
+  while ((listMatch = listRegex.exec(content)) !== null && items.length < minItems) {
+    const listContent = listMatch[2];
+    const liRegex = /<li[^>]*>(.*?)<\/li>/gi;
+    let liMatch;
+    
+    while ((liMatch = liRegex.exec(listContent)) !== null) {
+      const itemText = liMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (itemText && itemText.length > 20) {
+        items.push(itemText);
+      }
+    }
+  }
+  
+  // If not enough items from lists, try H3 headings
+  if (items.length < minItems) {
+    const h3Regex = /<h3[^>]*>(.*?)<\/h3>/gi;
+    const h3Matches = [];
+    let h3Match;
+    
+    while ((h3Match = h3Regex.exec(content)) !== null) {
+      h3Matches.push({
+        title: h3Match[1].replace(/<[^>]+>/g, '').trim(),
+        index: h3Match.index
+      });
+    }
+    
+    // Extract content after each H3
+    for (let i = 0; i < h3Matches.length && items.length < minItems; i++) {
+      const h3Title = h3Matches[i].title;
+      const startIndex = h3Matches[i].index + h3Matches[i][0].length;
+      const endIndex = i < h3Matches.length - 1 ? h3Matches[i + 1].index : content.length;
+      const h3Content = content.substring(startIndex, endIndex).trim();
+      const description = h3Content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
+      
+      if (h3Title && description && description.length > 30) {
+        items.push({
+          title: h3Title,
+          description: description
+        });
+      }
+    }
+  }
+  
+  // If still not enough, split by paragraphs
+  if (items.length < minItems) {
+    const pRegex = /<p[^>]*>(.*?)<\/p>/gi;
+    const paragraphs = [];
+    let pMatch;
+    
+    while ((pMatch = pRegex.exec(content)) !== null && paragraphs.length < minItems) {
+      const pText = pMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (pText && pText.length > 30) {
+        paragraphs.push(pText);
+      }
+    }
+    
+    // Use paragraphs as items
+    if (paragraphs.length > 0) {
+      items.push(...paragraphs.slice(0, minItems).map((text, idx) => ({
+        title: `Key Point ${idx + 1}`,
+        description: text.substring(0, 200)
+      })));
+    }
+  }
+  
+  // If still not enough, try splitting by sentences
+  if (items.length < minItems) {
+    const sentences = content
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .split(/[.!?]+/)
+      .filter(s => s.trim().length > 20)
+      .map(s => s.trim());
+    
+    // Combine 2-3 sentences per item
+    const sentencesPerItem = Math.ceil(sentences.length / minItems);
+    for (let i = 0; i < minItems && items.length < minItems; i++) {
+      const startIdx = i * sentencesPerItem;
+      const endIdx = Math.min(startIdx + sentencesPerItem, sentences.length);
+      if (startIdx < sentences.length) {
+        const combinedText = sentences.slice(startIdx, endIdx).join(' ').substring(0, 200);
+        if (combinedText.length > 20) {
+          items.push({
+            title: `Key Point ${items.length + 1}`,
+            description: combinedText
+          });
+        }
+      }
+    }
+  }
+  
+  return items.slice(0, minItems);
+}
+
+/**
  * Extract YouTube video ID from URL
  * Supports:
  * - https://www.youtube.com/watch?v=VIDEO_ID
@@ -381,33 +486,76 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
   sections.push({
     type: 'hero',
     title: story.title,
-    subtitle: '', // Will be populated from intro paragraph if available
+    subtitle: '', // Will be populated from intro paragraph (MANDATORY)
     image: '' // No image in hero for video-backed pages
   });
   
   // 2. Extract intro paragraph (content before first H2)
+  let introText = '';
   const firstH2Index = geminiContent.indexOf('<h2');
   if (firstH2Index > 0) {
-    const introText = geminiContent.substring(0, firstH2Index).trim();
-    if (introText) {
-      // Clean up HTML tags for subtitle
-      const subtitleText = introText
-        .replace(/<[^>]+>/g, '')
-        .substring(0, 150)
-        .trim();
-      if (subtitleText) {
-        sections[0].subtitle = subtitleText;
-      }
-      
-      // Add intro as paragraph section
-      sections.push({
-        type: 'paragraph',
-        text: introText
-      });
+    introText = geminiContent.substring(0, firstH2Index).trim();
+  }
+  
+  // MANDATORY: Ensure subtitle is always set
+  if (introText) {
+    // Clean up HTML tags for subtitle
+    const subtitleText = introText
+      .replace(/<[^>]+>/g, '')
+      .substring(0, 150)
+      .trim();
+    if (subtitleText) {
+      sections[0].subtitle = subtitleText;
     }
   }
   
-  // 3. YouTube video embed section (insert after intro, before scenes)
+  // Fallback subtitle if none extracted
+  if (!sections[0].subtitle || sections[0].subtitle.trim() === '') {
+    sections[0].subtitle = `Learn everything you need to know about ${story.title} and how to protect your home.`;
+  }
+  
+  // Add intro as paragraph section if available
+  if (introText) {
+    sections.push({
+      type: 'paragraph',
+      text: introText
+    });
+  }
+  
+  // 3. Generate infoBox before video (MANDATORY)
+  // Extract key information from intro or first H2 section for infoBox
+  let infoBoxText = '';
+  let infoBoxTitle = 'Important Information';
+  
+  if (introText) {
+    // Use first paragraph or key sentence from intro
+    const firstParagraph = introText.match(/<p[^>]*>(.*?)<\/p>/i);
+    if (firstParagraph) {
+      infoBoxText = firstParagraph[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (infoBoxText.length > 200) {
+        infoBoxText = infoBoxText.substring(0, 200) + '...';
+      }
+    } else {
+      infoBoxText = introText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
+    }
+  } else {
+    // Fallback infoBox text
+    infoBoxText = `Understanding ${story.title} is crucial for maintaining your home's safety and value. This guide provides essential information every homeowner should know.`;
+  }
+  
+  // Ensure infoBox text is substantial (100-200 words)
+  if (infoBoxText.length < 100) {
+    infoBoxText += ` This comprehensive guide covers everything from identification to prevention, helping you make informed decisions about your home maintenance.`;
+  }
+  
+  sections.push({
+    type: 'infoBox',
+    title: infoBoxTitle,
+    text: infoBoxText,
+    variant: 'info'
+  });
+  
+  // 4. YouTube video embed section (insert after infoBox, before scenes)
   if (youtubeVideoUrl) {
     // Convert YouTube URL to embed format
     const videoId = extractYouTubeVideoId(youtubeVideoUrl);
@@ -429,10 +577,10 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
     });
   }
   
-  // 4. Extract H2 sections from Gemini content
+  // 5. Extract H2 sections from Gemini content
   const h2Sections = extractH2Sections(geminiContent);
   
-  // 5. Build scene-driven sections (one combined paragraph with image per scene)
+  // 6. Build scene-driven sections (pattern: 3 paragraphs, 2 grids, 2 featureList, then others)
   // Skip FAQ H2 section if it exists (we'll handle it separately)
   const sceneH2Sections = h2Sections.filter(section => {
     const title = section.title.toLowerCase();
@@ -519,7 +667,12 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
     console.log(`   ✅ Matched Scene ${sceneIndex + 1} (${scene.visual_reference}) → H2: "${h2Section.title}"`);
   });
   
-  // Build paragraph sections with images in scene order
+  // Build sections with images in pattern: 3 paragraphs, 2 grids, 2 featureList (repeating)
+  const PARAGRAPH_COUNT = 3;
+  const GRID_COUNT = 2;
+  const FEATURE_LIST_COUNT = 2;
+  const PATTERN_LENGTH = PARAGRAPH_COUNT + GRID_COUNT + FEATURE_LIST_COUNT; // 7
+  
   scenes.forEach((scene, sceneIndex) => {
     const h2Section = sceneToH2Map.get(scene.id);
     if (!h2Section) {
@@ -533,17 +686,182 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
       throw new Error(`Scene ${sceneIndex} (id: ${sceneId}) has no matching S3 image URL`);
     }
     
-    // Combined paragraph section with image, title, and layout_type
-    // Use H2 title (already plain text from extractH2Sections) or fallback to visual_reference
-    const paragraphTitle = h2Section.title || scene.visual_reference;
+    const sectionTitle = h2Section.title || scene.visual_reference;
     
-    sections.push({
-      type: 'paragraph',
-      text: h2Section.content,
-      image: s3Data.s3_url,
-      title: paragraphTitle,
-      layout_type: 'NEW'
-    });
+    // Calculate position in repeating pattern (0-6, then repeats)
+    const patternPosition = sceneIndex % PATTERN_LENGTH;
+    
+    // Pattern: 3 paragraphs, 2 grids, 2 featureList (repeating)
+    if (patternPosition < PARAGRAPH_COUNT) {
+      // Paragraphs (positions 0, 1, 2)
+      sections.push({
+        type: 'paragraph',
+        text: h2Section.content,
+        image: s3Data.s3_url,
+        title: sectionTitle,
+        layout_type: 'NEW'
+      });
+    }
+    else if (patternPosition < PARAGRAPH_COUNT + GRID_COUNT) {
+      // Grids (positions 3, 4) - Generate 4 items for 2x2 grid layout
+      const listItems = extractListItems(h2Section.content, 4); // Extract up to 4 items
+      const gridItems = listItems.map((item, idx) => {
+        if (typeof item === 'string') {
+          return {
+            title: `Key Point ${idx + 1}`,
+            text: item.substring(0, 200),
+            image: idx === 0 ? s3Data.s3_url : '' // Use scene image for first item only
+          };
+        } else {
+          return {
+            title: item.title || `Key Point ${idx + 1}`,
+            text: item.description || item.text || '',
+            image: idx === 0 ? s3Data.s3_url : '' // Use scene image for first item only
+          };
+        }
+      });
+      
+      // Ensure at least 4 items for 2x2 grid (if content allows)
+      if (gridItems.length < 4) {
+        // Split content into multiple items
+        const contentParts = h2Section.content.split(/<p[^>]*>/i).filter(p => p.trim().length > 30);
+        const sentences = h2Section.content
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .split(/[.!?]+/)
+          .filter(s => s.trim().length > 20)
+          .map(s => s.trim());
+        
+        // Try to create 4 items from content
+        while (gridItems.length < 4 && (contentParts.length > 0 || sentences.length > 0)) {
+          const idx = gridItems.length;
+          let text = '';
+          
+          // First try content parts
+          if (contentParts.length > 0) {
+            text = contentParts.shift().replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
+          }
+          // Then try sentences
+          else if (sentences.length > 0) {
+            text = sentences.shift().substring(0, 200);
+          }
+          
+          if (text && text.length > 20) {
+            gridItems.push({
+              title: `Key Point ${idx + 1}`,
+              text: text,
+              image: '' // Only first item gets image
+            });
+          } else {
+            break; // No more content to extract
+          }
+        }
+      }
+      
+      // Ensure we have at least 2 items (minimum for grid)
+      if (gridItems.length < 2) {
+        // Fallback: create 2 items from any available content
+        const fallbackText = h2Section.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        const midPoint = Math.floor(fallbackText.length / 2);
+        gridItems.length = 0;
+        gridItems.push({
+          title: 'Key Point 1',
+          text: fallbackText.substring(0, midPoint).substring(0, 200),
+          image: s3Data.s3_url
+        });
+        gridItems.push({
+          title: 'Key Point 2',
+          text: fallbackText.substring(midPoint).substring(0, 200),
+          image: ''
+        });
+      }
+      
+      sections.push({
+        type: 'grid',
+        columns: 2, // Always 2 columns for 2x2 grid
+        items: gridItems.slice(0, 4) // Limit to 4 items max for clean 2x2 layout
+      });
+    }
+    else {
+      // FeatureLists (positions 5, 6) - Generate multiple items for vertical list
+      const listItems = extractListItems(h2Section.content, 3); // Extract up to 3 items
+      const featureItems = listItems.map((item, idx) => {
+        if (typeof item === 'string') {
+          return {
+            title: `Feature ${idx + 1}`,
+            description: item.substring(0, 250),
+            image: '' // FeatureList doesn't use images in frontend
+          };
+        } else {
+          return {
+            title: item.title || `Feature ${idx + 1}`,
+            description: item.description || item.text || '',
+            image: '' // FeatureList doesn't use images in frontend
+          };
+        }
+      });
+      
+      // Ensure at least 2-3 items for featureList
+      if (featureItems.length < 2) {
+        // Split content into multiple items using paragraphs or sentences
+        const contentParts = h2Section.content.split(/<p[^>]*>/i).filter(p => p.trim().length > 30);
+        const sentences = h2Section.content
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .split(/[.!?]+/)
+          .filter(s => s.trim().length > 15)
+          .map(s => s.trim());
+        
+        // Try to create 2-3 items from content
+        while (featureItems.length < 3 && (contentParts.length > 0 || sentences.length > 0)) {
+          const idx = featureItems.length;
+          let text = '';
+          
+          // First try content parts
+          if (contentParts.length > 0) {
+            text = contentParts.shift().replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 250);
+          }
+          // Then try sentences (combine 2-3 sentences for better descriptions)
+          else if (sentences.length > 0) {
+            const combinedSentences = sentences.splice(0, Math.min(3, sentences.length)).join(' ');
+            text = combinedSentences.substring(0, 250);
+          }
+          
+          if (text && text.length > 20) {
+            featureItems.push({
+              title: `Feature ${idx + 1}`,
+              description: text,
+              image: ''
+            });
+          } else {
+            break; // No more content to extract
+          }
+        }
+      }
+      
+      // Ensure we have at least 2 items (minimum for featureList)
+      if (featureItems.length < 2) {
+        // Fallback: create 2 items from any available content
+        const fallbackText = h2Section.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        const midPoint = Math.floor(fallbackText.length / 2);
+        featureItems.length = 0;
+        featureItems.push({
+          title: 'Feature 1',
+          description: fallbackText.substring(0, midPoint).substring(0, 250),
+          image: ''
+        });
+        featureItems.push({
+          title: 'Feature 2',
+          description: fallbackText.substring(midPoint).substring(0, 250),
+          image: ''
+        });
+      }
+      
+      sections.push({
+        type: 'featureList',
+        items: featureItems
+      });
+    }
   });
   
   // Handle any extra H2 sections (after all scenes) as regular paragraphs
@@ -556,7 +874,7 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
     }
   }
   
-  // 6. Check if FAQ section exists in any H2 section or remaining content
+  // 7. Check if FAQ section exists in any H2 section or remaining content
   let faqSection = null;
   
   // First, check all H2 sections for FAQ
@@ -632,10 +950,19 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
   }
   
   console.log(`✅ UX layout built: ${sections.length} sections`);
-  console.log(`   - Hero: 1`);
+  console.log(`   - Hero: 1 (with subtitle)`);
+  console.log(`   - InfoBox: 1`);
   console.log(`   - Video embed: ${youtubeVideoUrl ? '1' : '0'}`);
-  console.log(`   - Scene sections: ${scenes.length} (combined paragraph with image each)`);
-  console.log(`   - Additional sections: ${sections.length - 1 - (youtubeVideoUrl ? 1 : 0) - scenes.length}`);
+  
+  const paragraphCount = sections.filter(s => s.type === 'paragraph' && s.image).length;
+  const gridCount = sections.filter(s => s.type === 'grid').length;
+  const featureListCount = sections.filter(s => s.type === 'featureList').length;
+  
+  console.log(`   - Scene sections: ${scenes.length}`);
+  console.log(`     * Paragraphs with images: ${paragraphCount}`);
+  console.log(`     * Grids: ${gridCount}`);
+  console.log(`     * Feature Lists: ${featureListCount}`);
+  console.log(`   - Additional sections: ${sections.length - 1 - 1 - (youtubeVideoUrl ? 1 : 0) - scenes.length}`);
   
   return layout;
 }
@@ -787,11 +1114,18 @@ VIDEO MODE INSTRUCTIONS:
 - Create exactly ONE H2 section per scene (in the order provided in Visual Reference)
 - Each H2 section must be informative content about the topic, NOT a description of the image
 - The image is a visual reference/support - write about the topic/issue, not about what the image shows
-- Each H2 section must include:
-  * Informative content about the topic/issue (related to the visual_reference but not describing the image)
-  * What homeowners usually overlook about this issue
-  * What can happen if this issue is ignored (calm, informative tone)
-  * One simple safe action homeowners can take
+- CRITICAL VARIETY REQUIREMENT: Each H2 section must have UNIQUE, CONTEXTUAL taglines and subheadings that differ from other sections. Do NOT use the same taglines or phrases across sections.
+- For each H2 section, create VARIED content structure using H3 subheadings that are:
+  * Contextually relevant to the specific topic/issue of that section
+  * Phrased differently from other sections (avoid repetitive patterns)
+  * Natural and engaging (not formulaic)
+  * Covering different aspects: what to know, common mistakes, potential issues, solutions, prevention, etc.
+- Examples of VARIED tagline approaches (use different ones for each section):
+  * "Understanding [Specific Issue]" / "Why [Issue] Matters" / "The Hidden Dangers of [Issue]"
+  * "Common Mistakes Homeowners Make" / "What Most People Don't Realize" / "Overlooked Warning Signs"
+  * "Potential Consequences" / "What Happens When Ignored" / "The Risks of Delaying Action"
+  * "Simple Solutions" / "Easy Steps to Take" / "Prevention Strategies" / "Quick Fixes"
+- CRITICAL: Vary your language, sentence structure, and tagline phrasing for each section. Each section should feel unique and natural, not like a template.
 - CRITICAL: Do NOT write "The image shows..." or "This image depicts..." - write informative content about the topic itself
 - Do NOT generate <img> tags - images are already provided
 - Do NOT generate links
@@ -828,7 +1162,8 @@ REQUIREMENTS:
    - Each H2 section should be 200-400 words with substantial, informative detail about the topic
    - Write about the issue/concept/topic itself, not about what appears in the image
    - The image supports your content - reference concepts related to the visual_reference but don't describe the image
-   - Include H3 subheadings for detailed points (100-200 words each)
+   - Include H3 subheadings for detailed points (100-200 words each) - CRITICAL: Make each H3 subheading unique and contextually relevant. Vary the phrasing, structure, and focus for each section to avoid repetition.
+   - Vary the content structure across sections: some sections can focus on identification, others on prevention, some on solutions, others on risks - make each section feel distinct
    - Add bullet points and numbered lists for scannability
    - Include a conclusion that summarizes key points (150-200 words)
    - MANDATORY: Include an FAQ section with 5 questions and answers (see details below)
@@ -874,7 +1209,8 @@ You write comprehensive, well-researched content that demonstrates expertise, ex
 Your articles are optimized for Google AdSense approval and search engine visibility.
 You always write original, valuable content that provides real value to readers.
 CRITICAL: Every article you write MUST be at least 1000 words. Write substantial, detailed content with meaningful information. Short articles are not acceptable.
-CRITICAL: Write content as pure HTML. Do NOT use markdown syntax, code blocks, or any markdown formatting. Write HTML tags directly.`,
+CRITICAL: Write content as pure HTML. Do NOT use markdown syntax, code blocks, or any markdown formatting. Write HTML tags directly.
+CRITICAL VARIETY REQUIREMENT: When writing multiple sections, each section must have unique taglines, subheadings, and phrasing. Never repeat the same taglines or sentence structures across sections. Each section should feel distinct and natural, not like a template. Vary your language, structure, and approach for each section to create engaging, human-like content.`,
       temperature: 0.7,
       maxTokens: 8000
     });

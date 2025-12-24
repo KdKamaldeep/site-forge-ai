@@ -20,6 +20,18 @@ const nextConfig = {
         hostname: 'img.youtube.com',
         pathname: '/vi/**',
       },
+	  {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '5000',
+        pathname: '/images/**',
+      },
+	  {
+        protocol: 'https',
+        hostname: 'site-forge-ai-production.up.railway.app',
+        pathname: '/images/**',
+      }
+	  
     ],
 
     // ✅ Modern formats
