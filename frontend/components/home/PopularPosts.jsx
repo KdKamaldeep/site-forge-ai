@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatTitle } from '@/lib/textFormat';
-import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
+import { normalizeThumbnail, normalizeImageUrl, getYouTubeVideoId, getYouTubeThumbnailUrl } from '@/lib/imageUtils';
 import styles from './PopularPosts.module.css';
 
 export default function PopularPosts({ articles }) {
@@ -33,26 +33,32 @@ export default function PopularPosts({ articles }) {
                 {(() => {
                   const normalizedThumbnail = normalizeThumbnail(article.thumbnail);
                   const normalizedOgImage = normalizeImageUrl(article.meta?.ogImage);
-                  return normalizedThumbnail?.url ? (
-                    <Image
-                      src={normalizedThumbnail.url}
-                      alt={article.title}
-                      fill
-                      sizes="60px"
-                      quality={70}
-                      className={styles.thumbnailImage}
-                      style={{ objectFit: 'cover' }}
-                    />
-                  ) : normalizedOgImage ? (
-                    <Image
-                      src={normalizedOgImage}
-                      alt={article.title}
-                      fill
-                      sizes="60px"
-                      quality={70}
-                      className={styles.thumbnailImage}
-                      style={{ objectFit: 'cover' }}
-                    />
+                  const imageUrl = normalizedThumbnail?.url || normalizedOgImage;
+                  
+                  // Check if the URL is a YouTube link
+                  const youtubeVideoId = imageUrl ? getYouTubeVideoId(imageUrl) : null;
+                  const youtubeThumbnailUrl = youtubeVideoId ? getYouTubeThumbnailUrl(youtubeVideoId) : null;
+                  const finalImageUrl = youtubeThumbnailUrl || imageUrl;
+                  
+                  return finalImageUrl ? (
+                    <>
+                      <Image
+                        src={finalImageUrl}
+                        alt={article.title}
+                        fill
+                        sizes="60px"
+                        quality={70}
+                        className={styles.thumbnailImage}
+                        style={{ objectFit: 'cover' }}
+                      />
+                      {youtubeVideoId && (
+                        <div className={styles.youtubePlayIcon}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className={styles.thumbnailPlaceholder}></div>
                   );

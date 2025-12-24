@@ -18,7 +18,7 @@
  */
 
 import Image from 'next/image';
-import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
+import { normalizeThumbnail, normalizeImageUrl, getYouTubeVideoId, getYouTubeThumbnailUrl } from '@/lib/imageUtils';
 import styles from './ImageCard.module.css';
 
 export default function ImageCard({
@@ -37,7 +37,11 @@ export default function ImageCard({
   
   const imageUrl = normalizedThumbnail?.url || normalizedImage;
   
-  if (!imageUrl) {
+  // Check if the URL is a YouTube link
+  const youtubeVideoId = imageUrl ? getYouTubeVideoId(imageUrl) : null;
+  const youtubeThumbnailUrl = youtubeVideoId ? getYouTubeThumbnailUrl(youtubeVideoId) : null;
+  
+  if (!imageUrl && !youtubeThumbnailUrl) {
     // Return placeholder to maintain aspect ratio and prevent CLS
     return (
       <div className={`${styles.imageContainer} ${className}`} {...props}>
@@ -46,10 +50,13 @@ export default function ImageCard({
     );
   }
 
+  // Use YouTube thumbnail if YouTube URL detected, otherwise use regular image
+  const finalImageUrl = youtubeThumbnailUrl || imageUrl;
+
   return (
     <div className={`${styles.imageContainer} ${className}`} {...props}>
       <Image
-        src={imageUrl}
+        src={finalImageUrl}
         alt={alt}
         fill
         sizes={sizes}
@@ -65,6 +72,16 @@ export default function ImageCard({
         // WHY: Prevent layout shift by ensuring image loads with proper dimensions
         // The aspect-ratio container handles sizing, but this ensures smooth loading
       />
+      {/* Show play button overlay for YouTube videos */}
+      {youtubeVideoId && (
+        <div className={styles.youtubeOverlay}>
+          <div className={styles.playButton}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

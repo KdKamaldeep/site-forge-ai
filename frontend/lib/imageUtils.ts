@@ -69,3 +69,32 @@ export function normalizeThumbnail(
 export function getImageUrl(url: string | null | undefined): string | null {
   return normalizeImageUrl(url);
 }
+
+/**
+ * Check if URL is a YouTube URL and extract video ID
+ * Supports:
+ * - https://www.youtube.com/watch?v=VIDEO_ID
+ * - https://youtu.be/VIDEO_ID
+ * - https://www.youtube.com/embed/VIDEO_ID
+ * - https://m.youtube.com/watch?v=VIDEO_ID
+ * Returns video ID if YouTube URL, null otherwise
+ */
+export function getYouTubeVideoId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  
+  // Match youtube.com/watch?v=VIDEO_ID or youtube.com/embed/VIDEO_ID
+  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\n?#]+)/);
+  if (youtubeMatch && youtubeMatch[1]) {
+    return youtubeMatch[1];
+  }
+  
+  return null;
+}
+
+/**
+ * Get YouTube thumbnail URL from video ID
+ * Returns maxresdefault thumbnail URL (1280x720) or null
+ */
+export function getYouTubeThumbnailUrl(videoId: string): string {
+  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+}

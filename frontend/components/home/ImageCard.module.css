@@ -26,3 +26,42 @@
   background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
 }
 
+.youtubeOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  transition: background 0.2s ease;
+}
+
+.imageContainer:hover .youtubeOverlay {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.playButton {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 0, 0, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.playButton:hover {
+  transform: scale(1.1);
+  background: rgba(255, 0, 0, 1);
+}
+
+.playButton svg {
+  margin-left: 4px; /* Slight offset to center the play icon visually */
+}
+

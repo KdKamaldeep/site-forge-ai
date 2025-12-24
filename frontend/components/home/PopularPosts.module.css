@@ -81,6 +81,25 @@
   background: linear-gradient(135deg, var(--border, #e2e8f0) 0%, #d1d5db 100%);
 }
 
+.youtubePlayIcon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 0, 0, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.youtubePlayIcon svg {
+  margin-left: 2px; /* Slight offset to center the play icon visually */
+}
+
 .content {
   flex: 1;
   min-width: 0;
