@@ -35,7 +35,7 @@ export class SchemaMarkupService {
       },
       "mainEntityOfPage": {
         "@type": "WebPage",
-        "@id": `${baseUrl}/${page.slug === 'home' ? '' : page.slug}`
+        "@id": this.buildCanonicalUrl(page, baseUrl)
       },
       "keywords": page.meta?.keywords?.join(', ') || '',
       "articleSection": this.extractCategory(page),
@@ -111,6 +111,37 @@ export class SchemaMarkupService {
         "query-input": "required name=search_term_string"
       }
     };
+  }
+
+  /**
+   * Build canonical URL for a page
+   * Uses format: /categoryKey/slug for articles, /slug for home/standalone pages
+   */
+  static buildCanonicalUrl(page, baseUrl) {
+    // Home page uses base URL
+    if (page.slug === 'home' || page.isHome) {
+      return baseUrl;
+    }
+    
+    // For standalone pages (privacy, about, etc.), use /slug format
+    if (page.isStandalone) {
+      return `${baseUrl}/${page.slug}`;
+    }
+    
+    // For regular articles, use canonical format: /categoryKey/slug
+    const categoryKey = page.categoryKey;
+    const hasValidCategoryKey = categoryKey != null && 
+                                categoryKey !== '' && 
+                                String(categoryKey).trim() !== '' && 
+                                String(categoryKey).trim() !== 'null' && 
+                                String(categoryKey).trim() !== 'undefined';
+    
+    if (hasValidCategoryKey) {
+      return `${baseUrl}/${String(categoryKey).trim()}/${page.slug}`;
+    }
+    
+    // Fallback to /slug if no categoryKey (shouldn't happen for articles, but safe fallback)
+    return `${baseUrl}/${page.slug}`;
   }
 
   /**
