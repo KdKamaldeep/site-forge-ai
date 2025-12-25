@@ -37,7 +37,7 @@ export default function PageRenderer({
         
         <div className="page-renderer">
           
-          {renderUXLayout(layout)}
+          {renderUXLayout(layout, categoryKey)}
         </div>
       </>
     );

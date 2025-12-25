@@ -13,6 +13,8 @@ import Link from 'next/link';
 import SchemaMarkup from '@/components/seo/SchemaMarkup';
 import ArticleList from '@/components/articles/ArticleList';
 import CategorySidebar from '@/components/articles/CategorySidebar';
+import { formatTitle, toTitleCaseSmart } from '@/lib/textFormat';
+import { normalizeThumbnail, normalizeImageUrl } from '@/lib/imageUtils';
 import styles from './page.module.css';
 
 export const revalidate = 3600;
@@ -46,7 +48,17 @@ export async function generateMetadata({ params }: { params: { path: string | st
       return { title: 'Page Not Found' };
     }
 
-    const title = page.meta?.title || page.title;
+    // Get and clean title - remove duplication patterns like "how to X - how to X"
+    let rawTitle = page.meta?.title || page.title || '';
+    // Remove duplication pattern: "text - text" -> "text"
+    rawTitle = rawTitle.replace(/^(.+?)\s*-\s*\1$/i, '$1').trim();
+    // Format title properly (title case)
+    const formattedTitle = formatTitle(rawTitle);
+    // Add "(Step-by-Step)" for how-to guides if not already present
+    const finalTitle = formattedTitle.toLowerCase().includes('how to') && !formattedTitle.toLowerCase().includes('step-by-step') && !formattedTitle.toLowerCase().includes('(step-by-step)')
+      ? `${formattedTitle} (Step-by-Step)`
+      : formattedTitle;
+    
     // Clean description: remove any HTML tags (including meta tags) and decode entities
     const rawDescription = page.meta?.description || '';
     const description = rawDescription
@@ -60,18 +72,41 @@ export async function generateMetadata({ params }: { params: { path: string | st
       .replace(/&#39;/g, "'") // Decode &#39;
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
+    
     // Canonical URL in format: /categoryKey/slug (match site's trailing slash behavior if needed)
     const canonical = `https://${context.tenant?.domain || ''}/${categoryKey}/${slug}`;
+    
+    // Get image: hero image from layout, fallback to thumbnail, then tenant logo
+    let ogImage = null;
+    if (page.uxLayout?.sections && Array.isArray(page.uxLayout.sections)) {
+      const heroSection = page.uxLayout.sections.find((s: any) => s.type === 'hero');
+      if (heroSection?.image) {
+        ogImage = normalizeImageUrl(heroSection.image);
+      }
+    }
+    if (!ogImage && page.thumbnail?.url) {
+      ogImage = normalizeThumbnail(page.thumbnail)?.url || null;
+    }
+    if (!ogImage && context.tenant?.logo) {
+      ogImage = normalizeImageUrl(context.tenant.logo);
+    }
 
     return {
-      title: `${title} | ${brandName}`,
+      title: `${finalTitle} | ${brandName}`,
       description,
       alternates: { canonical },
       openGraph: {
-        title,
+        title: finalTitle, // No brand suffix for OG
         description,
         type: 'article',
         url: canonical,
+        ...(ogImage && { images: [{ url: ogImage }] }),
+      },
+      twitter: {
+        card: 'summary',
+        title: finalTitle, // No brand suffix for Twitter
+        description,
+        ...(ogImage && { images: [ogImage] }),
       },
     };
   }

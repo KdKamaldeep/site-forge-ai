@@ -6,18 +6,68 @@
 
 export class SchemaMarkupService {
   /**
+   * Get article image: hero image > thumbnail > tenant logo
+   */
+  static getArticleImage(page, tenant, baseUrl) {
+    // Try hero image from layout sections[0] (hero section)
+    if (page.uxLayout?.sections && Array.isArray(page.uxLayout.sections)) {
+      const heroSection = page.uxLayout.sections.find(s => s.type === 'hero');
+      if (heroSection?.image) {
+        return heroSection.image;
+      }
+    }
+    
+    // Fallback to thumbnail
+    if (page.thumbnail?.url) {
+      return page.thumbnail.url;
+    }
+    
+    // Fallback to ogImage from meta
+    if (page.meta?.ogImage) {
+      return page.meta.ogImage;
+    }
+    
+    // Final fallback to tenant logo
+    return tenant.logo || `${baseUrl}/og-image.jpg`;
+  }
+
+  /**
+   * Calculate word count from content (strip HTML tags and count words)
+   */
+  static calculateWordCount(content) {
+    if (!content || typeof content !== 'string') return 0;
+    
+    // Strip HTML tags
+    const textContent = content.replace(/<[^>]*>/g, '');
+    // Count words (split by whitespace and filter empty strings)
+    const words = textContent.trim().split(/\s+/).filter(w => w.length > 0);
+    return words.length;
+  }
+
+  /**
    * Generate Article schema for a page
    */
   static generateArticleSchema(page, tenant, baseUrl) {
     const publishedDate = page.createdAt || page.updatedAt || new Date();
     const modifiedDate = page.updatedAt || publishedDate;
+    
+    // Get article image (hero > thumbnail > logo)
+    const articleImage = this.getArticleImage(page, tenant, baseUrl);
+    
+    // Get word count: use stored wordCount if available, otherwise calculate from content
+    let wordCount = page.wordCount || null;
+    if (!wordCount && page.content) {
+      wordCount = this.calculateWordCount(page.content);
+    }
+    // If still no wordCount, default to 0 (shouldn't happen, but safe fallback)
+    wordCount = wordCount || 0;
 
     return {
       "@context": "https://schema.org",
       "@type": "Article",
       "headline": page.meta?.title || page.title,
       "description": page.meta?.description || page.content?.substring(0, 200),
-      "image": page.meta?.ogImage || tenant.logo || `${baseUrl}/og-image.jpg`,
+      "image": articleImage,
       "datePublished": new Date(publishedDate).toISOString(),
       "dateModified": new Date(modifiedDate).toISOString(),
       "author": {
@@ -39,7 +89,7 @@ export class SchemaMarkupService {
       },
       "keywords": page.meta?.keywords?.join(', ') || '',
       "articleSection": this.extractCategory(page),
-      "wordCount": page.content?.length || 0
+      "wordCount": wordCount
     };
   }
 

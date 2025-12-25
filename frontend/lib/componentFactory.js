@@ -95,6 +95,10 @@ export function renderSections(sections) {
 
   // Ensure infobox appears before videos
   const processedSections = ensureInfoBoxBeforeVideos(sections);
+  
+  // Find relatedPages section for CTA fallback
+  const relatedPagesSection = processedSections.find(s => s.type === 'relatedPages');
+  const relatedPagesItems = relatedPagesSection?.items || [];
 
   return processedSections.map((section, index) => {
     // Ensure section has a type property
@@ -137,10 +141,15 @@ export function renderSections(sections) {
       });
     }
 
+    // For CTA components, pass relatedPagesItems for fallback link resolution
+    const componentProps = sectionType === 'cta' 
+      ? { ...section, relatedPagesItems, allSections: processedSections }
+      : section;
+
     return (
       <Component
         key={index}
-        {...section}
+        {...componentProps}
       />
     );
   });
@@ -149,22 +158,34 @@ export function renderSections(sections) {
 /**
  * Render UX Layout
  * Handles both full layout object and sections array
+ * @param {Object|Array} uxLayout - Layout object with sections or sections array
+ * @param {string} categoryKey - Optional categoryKey for CTA fallback
  */
-export function renderUXLayout(uxLayout) {
+export function renderUXLayout(uxLayout, categoryKey = null) {
   if (!uxLayout) {
     return null;
   }
 
-  // If uxLayout has sections, render them
+  let sections = null;
+  
+  // If uxLayout has sections, use them
   if (uxLayout.sections && Array.isArray(uxLayout.sections)) {
-    return renderSections(uxLayout.sections);
+    sections = uxLayout.sections;
+  } else if (Array.isArray(uxLayout)) {
+    sections = uxLayout;
   }
 
-  // If uxLayout is an array directly, render it
-  if (Array.isArray(uxLayout)) {
-    return renderSections(uxLayout);
+  if (!sections) {
+    return null;
   }
+  
+  // For CTA components, inject categoryKey as a prop if available
+  const sectionsWithCategoryKey = categoryKey 
+    ? sections.map(section => 
+        section.type === 'cta' ? { ...section, categoryKey } : section
+      )
+    : sections;
 
-  return null;
+  return renderSections(sectionsWithCategoryKey);
 }
 
