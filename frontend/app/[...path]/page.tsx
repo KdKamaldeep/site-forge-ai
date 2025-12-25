@@ -8,7 +8,7 @@ import { getTenantContext, getTenantIdFromHeaders } from '@/lib/tenant';
 import { getPageBySlug, getCategoryLanding, listPages } from '@/lib/api';
 import { Metadata } from 'next';
 import PageRenderer from '@/components/PageRenderer';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import SchemaMarkup from '@/components/seo/SchemaMarkup';
 import ArticleList from '@/components/articles/ArticleList';
@@ -60,6 +60,7 @@ export async function generateMetadata({ params }: { params: { path: string | st
       .replace(/&#39;/g, "'") // Decode &#39;
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
+    // Canonical URL in format: /categoryKey/slug (match site's trailing slash behavior if needed)
     const canonical = `https://${context.tenant?.domain || ''}/${categoryKey}/${slug}`;
 
     return {
@@ -95,29 +96,13 @@ export default async function DynamicPathPage({ params }: { params: { path: stri
       const categoryKey = pathArray[0];
       const category = context.siteDNA?.categories?.find(c => c.categoryKey === categoryKey);
       if (!category) {
-        // Not a category, try as article slug
+        // Not a category, check if it's an article slug that needs redirecting
         const page = await getPageBySlug(tenantId, categoryKey);
-        if (page) {
-          return (
-            <PageRenderer
-              layout={page.uxLayout}
-              content={page.content}
-              meta={page.meta}
-              title={page.title}
-              schemaMarkup={page.schemaMarkup}
-              readingTime={page.readingTime}
-              wordCount={page.wordCount}
-              intent={page.intent}
-              monetizationMode={page.monetizationMode}
-              categoryKey={page.categoryKey}
-              thumbnail={page.thumbnail}
-              isStandalone={page.isStandalone}
-              updatedAt={page.updatedAt}
-              publishedAt={page.publishedAt}
-              adsenseId={context.tenant?.adsenseId}
-            />
-          );
+        if (page && page.categoryKey && !page.isStandalone) {
+          // Redirect /slug to /categoryKey/slug with permanent redirect (308 for GET = 301 equivalent)
+          redirect(`/${page.categoryKey}/${page.slug}`);
         }
+        // If page doesn't exist or doesn't have categoryKey, or is standalone, show 404
         notFound();
       }
 

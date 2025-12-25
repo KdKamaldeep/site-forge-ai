@@ -33,11 +33,12 @@ function generateSitemapXML(pages: any[], baseUrl: string): string {
                                     String(categoryKey).trim() !== 'undefined';
         
         if (hasValidCategoryKey) {
-          // Include categoryKey in URL: /categoryKey/slug
+          // Include categoryKey in URL: /categoryKey/slug (canonical format)
           urlPath = `${String(categoryKey).trim()}/${page.slug}`;
         } else {
-          // Fallback to just slug if no categoryKey
-          urlPath = page.slug;
+          // Skip pages without categoryKey (they should have one, but exclude from sitemap if missing)
+          // This ensures sitemap only includes canonical /categoryKey/slug URLs
+          return null;
         }
       }
       
@@ -74,6 +75,7 @@ function generateSitemapXML(pages: any[], baseUrl: string): string {
     <priority>${priority}</priority>
   </url>`;
     })
+    .filter(url => url !== null) // Remove null entries (pages without categoryKey)
     .join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>

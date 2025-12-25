@@ -18,7 +18,7 @@ node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011
 node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011 nutrition
 
 # Process a specific page
-node scripts/add-internal-links-to-faq.js 693db57edeafaf32e8b75427 smart-devices how-to-install-smart-lights
+node scripts/add-internal-links-to-faq.js 693db57edeafaf32e8b75427 diy-fixes seasonal-home-maintenance-tips-homeowners-forget
 
 # Process specific category with 1 page
 node scripts/run-pillar.js www.lavanyaverse.com --category smart-devices --count 1
@@ -33,3 +33,12 @@ node scripts/run-pillar.js example.com --count 3
 node scripts/publish-page.js www.lavanyaverse.com how-to-install-smart-lights
 
 preview/[slug]/page.tsx
+
+
+# Windows
+node scripts\create-page.js mytest.mytest.ai --video-dir D:\videos\Seasonal_Home_Maintenance_Tips_Homeowners_Forget --youtube-video-url https://youtu.be/piksobk01Os --category smart-devices
+
+# Linux/Mac
+node scripts/create-page.js www.lavanyaverse.com --video-dir D:\videos\Hidden_Fire_Hazards_in_Plain_Sight --youtube-video-url https://youtu.be/biy2YKebn5s --category diy-fixes
+
+
