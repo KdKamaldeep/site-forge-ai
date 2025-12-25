@@ -8,7 +8,7 @@ import { getTenantContext, getTenantIdFromHeaders } from '@/lib/tenant';
 import { getPageBySlug, getCategoryLanding, listPages } from '@/lib/api';
 import { Metadata } from 'next';
 import PageRenderer from '@/components/PageRenderer';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
 import SchemaMarkup from '@/components/seo/SchemaMarkup';
 import ArticleList from '@/components/articles/ArticleList';
@@ -146,8 +146,8 @@ export default async function DynamicPathPage({ params }: { params: { path: stri
           
           if (hasValidCategoryKey) {
             // 301 Permanent Redirect: /slug -> /categoryKey/slug
-            // Next.js redirect() uses 308 for GET requests, which is equivalent to 301 for SEO
-            redirect(`/${pageCategoryKey.trim()}/${page.slug}`);
+            // permanentRedirect() uses 308 status code (equivalent to 301 for SEO)
+            permanentRedirect(`/${pageCategoryKey.trim()}/${page.slug}`);
           }
           // Article page without valid categoryKey - show 404
           // (Ideally all articles should have categoryKey - this will be fixed for new pages)
@@ -286,7 +286,7 @@ export default async function DynamicPathPage({ params }: { params: { path: stri
 
     notFound();
   } catch (error: any) {
-    // Re-throw redirect errors - Next.js redirect() throws NEXT_REDIRECT errors that should propagate
+    // Re-throw redirect errors - Next.js permanentRedirect() throws NEXT_REDIRECT errors that should propagate
     if (error?.digest?.startsWith('NEXT_REDIRECT')) {
       throw error;
     }
