@@ -127,17 +127,30 @@ export default async function DynamicPathPage({ params }: { params: { path: stri
 
   try {
     if (pathArray.length === 1) {
-      // Single segment: category landing page
+      // Single segment: category landing page OR article slug needing redirect
       const categoryKey = pathArray[0];
       const category = context.siteDNA?.categories?.find(c => c.categoryKey === categoryKey);
+      
       if (!category) {
         // Not a category, check if it's an article slug that needs redirecting
         const page = await getPageBySlug(tenantId, categoryKey);
-        if (page && page.categoryKey && !page.isStandalone) {
-          // Redirect /slug to /categoryKey/slug with permanent redirect (308 for GET = 301 equivalent)
-          redirect(`/${page.categoryKey}/${page.slug}`);
+        if (page) {
+          // Page exists - check if it needs redirect (non-standalone articles must have categoryKey)
+          if (!page.isStandalone) {
+            if (page.categoryKey) {
+              // Redirect /slug to /categoryKey/slug with permanent redirect (308 for GET = 301 equivalent)
+              redirect(`/${page.categoryKey}/${page.slug}`);
+            }
+            // Article page without categoryKey - this is an error state, but still show 404
+            // (Ideally all articles should have categoryKey)
+            notFound();
+          }
+          // Standalone pages are meant to be accessible at /slug, so don't redirect them
+          // They should be handled by the two-segment route or a separate route
+          // For now, show 404 (standalone pages might need special handling)
+          notFound();
         }
-        // If page doesn't exist or doesn't have categoryKey, or is standalone, show 404
+        // Page doesn't exist, show 404
         notFound();
       }
 
@@ -226,6 +239,24 @@ export default async function DynamicPathPage({ params }: { params: { path: stri
         notFound();
       }
 
+      // Quick fix: Ensure schemaMarkup mainEntityOfPage uses canonical URL with categoryKey
+      let fixedSchemaMarkup = page.schemaMarkup;
+      if (fixedSchemaMarkup && Array.isArray(fixedSchemaMarkup)) {
+        const canonicalUrl = `https://${context.tenant?.domain || ''}/${categoryKey}/${slug}`;
+        fixedSchemaMarkup = fixedSchemaMarkup.map((schema: any) => {
+          if (schema['@type'] === 'Article' && schema.mainEntityOfPage) {
+            return {
+              ...schema,
+              mainEntityOfPage: {
+                '@type': 'WebPage',
+                '@id': canonicalUrl
+              }
+            };
+          }
+          return schema;
+        });
+      }
+
       return (
         <>
           <PageRenderer
@@ -233,12 +264,12 @@ export default async function DynamicPathPage({ params }: { params: { path: stri
             content={page.content}
             meta={page.meta}
             title={page.title}
-            schemaMarkup={page.schemaMarkup}
+            schemaMarkup={fixedSchemaMarkup}
             readingTime={page.readingTime}
             wordCount={page.wordCount}
             intent={page.intent}
             monetizationMode={page.monetizationMode}
-            categoryKey={page.categoryKey}
+            categoryKey={categoryKey}
             updatedAt={page.updatedAt}
             thumbnail={page.thumbnail}
             isStandalone={page.isStandalone}
