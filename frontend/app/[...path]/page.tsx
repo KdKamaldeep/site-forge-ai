@@ -134,23 +134,27 @@ export default async function DynamicPathPage({ params }: { params: { path: stri
       if (!category) {
         // Not a category, check if it's an article slug that needs redirecting
         const page = await getPageBySlug(tenantId, categoryKey);
-        if (page) {
-          // Page exists - check if it needs redirect (non-standalone articles must have categoryKey)
-          if (!page.isStandalone) {
-            if (page.categoryKey) {
-              // Redirect /slug to /categoryKey/slug with permanent redirect (308 for GET = 301 equivalent)
-              redirect(`/${page.categoryKey}/${page.slug}`);
-            }
-            // Article page without categoryKey - this is an error state, but still show 404
-            // (Ideally all articles should have categoryKey)
-            notFound();
+        if (page && !page.isStandalone) {
+          // Page exists and is not standalone - check if it has categoryKey for redirect
+          const pageCategoryKey = page.categoryKey;
+          // Validate categoryKey exists and is not empty/null/undefined
+          const hasValidCategoryKey = pageCategoryKey && 
+                                      typeof pageCategoryKey === 'string' && 
+                                      pageCategoryKey.trim() !== '' && 
+                                      pageCategoryKey.trim() !== 'null' && 
+                                      pageCategoryKey.trim() !== 'undefined';
+          
+          if (hasValidCategoryKey) {
+            // 301 Permanent Redirect: /slug -> /categoryKey/slug
+            // Next.js redirect() uses 308 for GET requests, which is equivalent to 301 for SEO
+            redirect(`/${pageCategoryKey.trim()}/${page.slug}`);
           }
-          // Standalone pages are meant to be accessible at /slug, so don't redirect them
-          // They should be handled by the two-segment route or a separate route
-          // For now, show 404 (standalone pages might need special handling)
+          // Article page without valid categoryKey - show 404
+          // (Ideally all articles should have categoryKey - this will be fixed for new pages)
+          console.warn(`[Redirect] Page ${page.slug} exists but has no valid categoryKey, showing 404`);
           notFound();
         }
-        // Page doesn't exist, show 404
+        // Page doesn't exist, is standalone, or other error - show 404
         notFound();
       }
 
@@ -281,7 +285,11 @@ export default async function DynamicPathPage({ params }: { params: { path: stri
     }
 
     notFound();
-  } catch (error) {
+  } catch (error: any) {
+    // Re-throw redirect errors - Next.js redirect() throws NEXT_REDIRECT errors that should propagate
+    if (error?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
     console.error('Error loading page:', error);
     notFound();
   }
