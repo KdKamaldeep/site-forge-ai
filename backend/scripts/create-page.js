@@ -381,14 +381,15 @@ function extractListItems(content, minItems = 2) {
     while ((h3Match = h3Regex.exec(content)) !== null) {
       h3Matches.push({
         title: h3Match[1].replace(/<[^>]+>/g, '').trim(),
-        index: h3Match.index
+        index: h3Match.index,
+        matchLength: h3Match[0].length
       });
     }
     
     // Extract content after each H3
     for (let i = 0; i < h3Matches.length && items.length < minItems; i++) {
       const h3Title = h3Matches[i].title;
-      const startIndex = h3Matches[i].index + h3Matches[i][0].length;
+      const startIndex = h3Matches[i].index + h3Matches[i].matchLength;
       const endIndex = i < h3Matches.length - 1 ? h3Matches[i + 1].index : content.length;
       const h3Content = content.substring(startIndex, endIndex).trim();
       const description = h3Content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
@@ -668,9 +669,9 @@ function buildVideoBackedUXLayout(story, scenes, sceneToS3Map, geminiContent, yo
   });
   
   // Build sections with images in pattern: 3 paragraphs, 2 grids, 2 featureList (repeating)
-  const PARAGRAPH_COUNT = 3;
-  const GRID_COUNT = 2;
-  const FEATURE_LIST_COUNT = 2;
+  const PARAGRAPH_COUNT = 7;
+  const GRID_COUNT = 0;
+  const FEATURE_LIST_COUNT = 0;
   const PATTERN_LENGTH = PARAGRAPH_COUNT + GRID_COUNT + FEATURE_LIST_COUNT; // 7
   
   scenes.forEach((scene, sceneIndex) => {

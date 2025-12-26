@@ -18,7 +18,7 @@ node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011
 node scripts/add-internal-links-to-faq.js 507f1f77bcf86cd799439011 nutrition
 
 # Process a specific page
-node scripts/add-internal-links-to-faq.js 693db57edeafaf32e8b75427 diy-fixes seasonal-home-maintenance-tips-homeowners-forget
+node scripts/add-internal-links-to-faq.js 693db57edeafaf32e8b75427 home-safety hidden-fire-hazards-in-plain-sight
 
 # Process specific category with 1 page
 node scripts/run-pillar.js www.lavanyaverse.com --category smart-devices --count 1
@@ -42,3 +42,4 @@ node scripts\create-page.js mytest.mytest.ai --video-dir D:\videos\Seasonal_Home
 node scripts/create-page.js www.lavanyaverse.com --video-dir D:\videos\Hidden_Fire_Hazards_in_Plain_Sight --youtube-video-url https://youtu.be/biy2YKebn5s --category diy-fixes
 
 
+node scripts/create-page.js www.lavanyaverse.com --video-dir D:\videos\Hidden_Gas_Risks_Inside_Your_Home --youtube-video-url https://youtu.be/_yJZCjKn3gs --category home-safety
